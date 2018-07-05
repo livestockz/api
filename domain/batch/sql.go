@@ -28,7 +28,7 @@ type batchRepository struct {
 
 func (repo *batchRepository) RessolveBatchByID(ID int32) (*Batch, error) {
 	query := dbmapper.Prepare(selectBatch + " Where id = :id").With(
-		Param("id", ID),
+		dbmapper.Param("id", ID),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
