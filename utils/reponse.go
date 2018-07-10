@@ -30,7 +30,7 @@ func Ok(c *gin.Context, data interface{}) {
 
 //Ok writes http response with status code 200 and json object with `data` property
 func Page(c *gin.Context, data interface{}, page, limit, total int32) {
-	c.JSON(200, PageSuccessResponse{data, page, limit, total})
+	c.JSON(200, &PageSuccessResponse{SuccessResponse{data}, page, limit, total})
 }
 
 //Created writes http response with status code 201 and json object with `data` property
@@ -50,29 +50,29 @@ func BadRequest(c *gin.Context, errors ...error) {
 
 //Unauthorized writes http response with status code 401 and json object with `error` property
 func Unauthorized(c *gin.Context, messages ...string) {
-	errors := make([]error, len(messages))
+	errs := make([]error, len(messages))
 	for i, msg := range messages {
-		errors[i] = errors.New(msg)
+		errs[i] = errors.New(msg)
 	}
-	c.JSON(401, FailureResponse{errors})
+	c.JSON(401, FailureResponse{errs})
 }
 
 //Forbidden writes http response with status code 403 and json object with `error` property
 func Forbidden(c *gin.Context, messages ...string) {
-	errors := make([]error, len(messages))
+	errs := make([]error, len(messages))
 	for i, msg := range messages {
-		errors[i] = errors.New(msg)
+		errs[i] = errors.New(msg)
 	}
-	c.JSON(403, FailureResponse{errors})
+	c.JSON(403, FailureResponse{errs})
 }
 
 //NotFound writes http response with status code 404 and json object with `error` property
 func NotFound(c *gin.Context, messages ...string) {
-	errors := make([]error, len(messages))
+	errs := make([]error, len(messages))
 	for i, msg := range messages {
-		errors[i] = errors.New(msg)
+		errs[i] = errors.New(msg)
 	}
-	c.JSON(403, FailureResponse{errors})
+	c.JSON(403, FailureResponse{errs})
 }
 
 //Error writes http response with status code 500 and json object with `error` property
