@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -26,10 +27,17 @@ func main() {
 
 	//set up http server
 	r := gin.Default()
-	r.GET("/ping", func(ctx *gin.Context) {
-		if batches, err := repo.RessolveBatchByID(1); err != nil {
-			ctx.JSON(500, gin.H{
+	r.GET("/ping/:id", func(ctx *gin.Context) {
+		id := ctx.Params.ByName("id")
+		ID, err := strconv.ParseInt(id, 0, 64)
+		if err != nil {
+			ctx.JSON(404, gin.H{
 				"error": err,
+			})
+		}
+		if batches, err := repo.RessolveBatchByID(ID); err != nil {
+			ctx.JSON(500, gin.H{
+				"error": err.Error(),
 			})
 		} else {
 			ctx.JSON(200, gin.H{
