@@ -3,48 +3,35 @@ package main
 import (
 	"database/sql"
 	"log"
+	"time"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/livestockz/api/domain/batch"
+	"github.com/livestockz/api/config"
+	"github.com/livestockz/api/handler"
+	"github.com/ncrypthic/gocontainer"
 )
 
 func main() {
-	//set up database
-	//1. Connect to database
-	db, err := sql.Open("mysql", "root@/livestock?parseTime=true")
+	// Setup deps
+	// 1. database
+	cfg := config.Get()
+	db, err := sql.Open("mysql", cfg.DatabaseDSN())
 	if err != nil {
 		log.Print(err)
 		panic("Failed connect to database.")
 	}
 
 	defer db.Close()
-
-	repo := batch.NewRepository(db)
-	// ids := []int32{1,2,3}
-	// RessolveBatchByIDs(ids...)
-
-	//set up http server
 	r := gin.Default()
-	r.GET("/ping/:id", func(ctx *gin.Context) {
-		id := ctx.Params.ByName("id")
-		ID, err := strconv.ParseInt(id, 0, 64)
-		if err != nil {
-			ctx.JSON(404, gin.H{
-				"error": err,
-			})
-		}
-		if batches, err := repo.RessolveBatchByID(ID); err != nil {
-			ctx.JSON(500, gin.H{
-				"error": err.Error(),
-			})
-		} else {
-			ctx.JSON(200, gin.H{
-				"data": batches,
-			})
-		}
-	})
-
-	r.Run(":9000")
+	sc := gocontainer.NewContainer()
+	sc.RegisterService("db", db)
+	sc.RegisterService("config", cfg)
+	sc.HandleGracefulShutdown(3 * time.Second)
+	if err := sc.Ready(); err != nil {
+		panic("Failed to start service container")
+	}
+	r.GET("/health", handler.HealthHandler)
+	r.Run(":9090")
 }
