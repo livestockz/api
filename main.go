@@ -25,12 +25,15 @@ func main() {
 
 	defer db.Close()
 
+	//register Handler
+	BatchHandler := new(handler.BatchHandler)
+
 	//register service
 	r := gin.Default()
 	sc := gocontainer.NewContainer()
 	sc.RegisterService("db", db)
 	sc.RegisterService("config", cfg)
-	sc.RegisterService("BatchHandler", new(handler.Handler))
+	sc.RegisterService("BatchHandler", new(handler.BatchHandler))
 	sc.RegisterService("BatchService", new(batch.BatchService))
 	sc.RegisterService("BatchRepository", new(batch.BatchRepository))
 	sc.HandleGracefulShutdown(3 * time.Second)
