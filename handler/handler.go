@@ -16,7 +16,7 @@ type BatchHandler struct {
 	BatchService batch.Service `inject:"BatchService"`
 }
 
-func HealthHandler(c *gin.Context) {
+func (h *BatchHandler) HealthHandler(c *gin.Context) {
 	utils.Ok(c, nil)
 }
 
