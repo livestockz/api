@@ -15,7 +15,7 @@ type Handler interface {
 }
 
 type BatchHandler struct {
-	BatchService batch.Service `inject:"BatchService"`
+	BatchService batch.Service `inject:"batchService"`
 }
 
 func (h *BatchHandler) HealthHandler(c *gin.Context) {

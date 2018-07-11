@@ -3,7 +3,6 @@ package batch
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/ncrypthic/dbmapper"
 	. "github.com/ncrypthic/dbmapper/dialects/mysql"
@@ -12,7 +11,7 @@ import (
 
 type Repository interface {
 	//RessolvePage(page, limit int32, keyword string) (*utils.Page, error)
-	ResolveBatchByID(ID uuid.UUID) (*Batch, error)
+	ResolveBatchByID(id uuid.UUID) (*Batch, error)
 	//RessolveBatchByIDs(IDs ...int32) ([]Batch, error)
 	//StoreBatch(batch *Batch) (*Batch, error)
 	//RemoveBatchByID(ID int32) (*Batch, error)
@@ -28,23 +27,23 @@ type BatchRepository struct {
 	DB *sql.DB `inject:"db"`
 }
 
-func (repo *BatchRepository) ResolveBatchByID(ID uuid.UUID) (*Batch, error) {
+func (repo *BatchRepository) ResolveBatchByID(id uuid.UUID) (*Batch, error) {
 	query := dbmapper.Prepare(selectBatch + " WHERE id = :id").With(
-		dbmapper.Param("id", ID),
+		dbmapper.Param("id", id),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
 	}
 	batches := make([]Batch, 0)
-	log.Print("sql:", query.SQL())
-	log.Print("sql params:", query.Params())
+	//log.Print("sql:", query.SQL())
+	//log.Print("sql params:", query.Params())
 	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
 
 	if err != nil {
 		return nil, err
 	}
 	if len(batches) < 1 {
-		return nil, fmt.Errorf("batch with id %s not found", ID)
+		return nil, fmt.Errorf("batch with id %s not found", id)
 	}
 	return &batches[0], nil
 }

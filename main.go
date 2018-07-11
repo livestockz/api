@@ -26,7 +26,7 @@ func main() {
 	defer db.Close()
 
 	//register Handler
-	BatchHandler := new(handler.BatchHandler)
+	batchHandler := new(handler.BatchHandler)
 	//BatchService := new(batch.BatchService)
 
 	//register service
@@ -34,14 +34,14 @@ func main() {
 	sc := gocontainer.NewContainer()
 	sc.RegisterService("db", db)
 	sc.RegisterService("config", cfg)
-	sc.RegisterService("BatchHandler", BatchHandler)
-	sc.RegisterService("BatchService", new(batch.BatchService))
-	sc.RegisterService("BatchRepository", new(batch.BatchRepository))
+	sc.RegisterService("batchHandler", batchHandler)
+	sc.RegisterService("batchService", new(batch.BatchService))
+	sc.RegisterService("batchRepository", new(batch.BatchRepository))
 	sc.HandleGracefulShutdown(3 * time.Second)
 	if err := sc.Ready(); err != nil {
 		panic("Failed to start service container")
 	}
-	r.GET("/health", BatchHandler.HealthHandler)
-	r.GET("/ping/:id", BatchHandler.ResolveBatchByID)
+	r.GET("/health", batchHandler.HealthHandler)
+	r.GET("/ping/:id", batchHandler.ResolveBatchByID)
 	r.Run(":9090")
 }
