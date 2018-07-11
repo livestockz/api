@@ -13,7 +13,7 @@ type Handler interface {
 }
 
 type BatchHandler struct {
-	BatchService batch.Service `inject:"BatchService"`
+	BatchService *batch.BatchService `inject:"BatchService"`
 }
 
 func (h *BatchHandler) HealthHandler(c *gin.Context) {
@@ -24,18 +24,12 @@ func (h *BatchHandler) ResolveBatchByID(c *gin.Context) {
 	id := c.Params.ByName("id")
 	ID, err := uuid.FromString(id)
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": err.Error(),
-		})
+		utils.Error(c, err)
 	}
 
-	if batches, err := h.BatchService.ResolveBatchByID(ID); err != nil {
-		c.JSON(500, gin.H{
-			"error": err.Error(),
-		})
+	if batch, err := h.BatchService.ResolveBatchByID(ID); err != nil {
+		utils.Error(c, err)
 	} else {
-		c.JSON(200, gin.H{
-			"data": batches,
-		})
+		utils.Ok(c, &batch)
 	}
 }

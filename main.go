@@ -27,6 +27,7 @@ func main() {
 
 	//register Handler
 	BatchHandler := new(handler.BatchHandler)
+	//BatchService := new(batch.BatchService)
 
 	//register service
 	r := gin.Default()

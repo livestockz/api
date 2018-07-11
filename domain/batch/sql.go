@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	//RessolvePage(page, limit int32, keyword string) (*utils.Page, error)
-	RessolveBatchByID(ID uuid.UUID) (*Batch, error)
+	ResolveBatchByID(ID uuid.UUID) (*Batch, error)
 	//RessolveBatchByIDs(IDs ...int32) ([]Batch, error)
 	//StoreBatch(batch *Batch) (*Batch, error)
 	//RemoveBatchByID(ID int32) (*Batch, error)
@@ -25,10 +25,10 @@ const (
 )
 
 type BatchRepository struct {
-	db *sql.DB `inject:"db"`
+	DB *sql.DB `inject:"db"`
 }
 
-func (repo *BatchRepository) RessolveBatchByID(ID uuid.UUID) (*Batch, error) {
+func (repo *BatchRepository) ResolveBatchByID(ID uuid.UUID) (*Batch, error) {
 	query := dbmapper.Prepare(selectBatch + " WHERE id = :id").With(
 		dbmapper.Param("id", ID),
 	)
@@ -38,13 +38,13 @@ func (repo *BatchRepository) RessolveBatchByID(ID uuid.UUID) (*Batch, error) {
 	batches := make([]Batch, 0)
 	log.Print("sql:", query.SQL())
 	log.Print("sql params:", query.Params())
-	err := Parse(repo.db.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
 
 	if err != nil {
 		return nil, err
 	}
 	if len(batches) < 1 {
-		return nil, fmt.Errorf("batch with id %d not found", ID)
+		return nil, fmt.Errorf("batch with id %s not found", ID)
 	}
 	return &batches[0], nil
 }
