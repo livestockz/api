@@ -7,6 +7,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+type Handler interface {
+	HealthHandler(*gin.Context)
+	ResolveBatchByID(*gin.Context)
+}
+
 type BatchHandler struct {
 	BatchService batch.Service `inject:"BatchService"`
 }
@@ -17,10 +22,10 @@ func HealthHandler(c *gin.Context) {
 
 func (h *BatchHandler) ResolveBatchByID(c *gin.Context) {
 	id := c.Params.ByName("id")
-	ID, err := uuid.FromString(string)
+	ID, err := uuid.FromString(id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Something went wrong: %s", err.Error(),
+			"error": err.Error(),
 		})
 	}
 

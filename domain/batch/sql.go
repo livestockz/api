@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	//RessolvePage(page, limit int32, keyword string) (*utils.Page, error)
-	RessolveBatchByID(ID *uuid.UUID) (*Batch, error)
+	RessolveBatchByID(ID uuid.UUID) (*Batch, error)
 	//RessolveBatchByIDs(IDs ...int32) ([]Batch, error)
 	//StoreBatch(batch *Batch) (*Batch, error)
 	//RemoveBatchByID(ID int32) (*Batch, error)
@@ -28,7 +28,7 @@ type BatchRepository struct {
 	db *sql.DB `inject:"db"`
 }
 
-func (repo *BatchRepository) RessolveBatchByID(ID *uuid.UUID) (*Batch, error) {
+func (repo *BatchRepository) RessolveBatchByID(ID uuid.UUID) (*Batch, error) {
 	query := dbmapper.Prepare(selectBatch + " WHERE id = :id").With(
 		dbmapper.Param("id", ID),
 	)
