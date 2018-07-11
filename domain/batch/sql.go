@@ -7,12 +7,13 @@ import (
 
 	"github.com/ncrypthic/dbmapper"
 	. "github.com/ncrypthic/dbmapper/dialects/mysql"
+	uuid "github.com/satori/go.uuid"
 )
 
-type BatchRepository interface {
+type Repository interface {
 	//RessolvePage(page, limit int32, keyword string) (*utils.Page, error)
+	RessolveBatchByID(ID *uuid.UUID) (*Batch, error)
 	//RessolveBatchByIDs(IDs ...int32) ([]Batch, error)
-	RessolveBatchByID(ID int64) (*Batch, error)
 	//StoreBatch(batch *Batch) (*Batch, error)
 	//RemoveBatchByID(ID int32) (*Batch, error)
 	//RemoveBatchByIDs(IDs ...int32) ([]Batch, error)
@@ -23,11 +24,11 @@ const (
 	insertBatch = `INSERT INTO growth_batch(name, status, deleted, created) VALUES (:name, :status, :deleted, now())`
 )
 
-type batchRepository struct {
-	db *sql.DB
+type BatchRepository struct {
+	db *sql.DB `inject:"db"`
 }
 
-func (repo *batchRepository) RessolveBatchByID(ID int64) (*Batch, error) {
+func (repo *BatchRepository) RessolveBatchByID(ID *uuid.UUID) (*Batch, error) {
 	query := dbmapper.Prepare(selectBatch + " WHERE id = :id").With(
 		dbmapper.Param("id", ID),
 	)
@@ -67,8 +68,4 @@ func batchesMapper(rows *[]Batch) dbmapper.RowMapper {
 			return nil
 		})
 	}
-}
-
-func NewRepository(db *sql.DB) BatchRepository {
-	return &batchRepository{db}
 }
