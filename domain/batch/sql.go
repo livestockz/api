@@ -3,16 +3,16 @@ package batch
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/ncrypthic/dbmapper"
 	. "github.com/ncrypthic/dbmapper/dialects/mysql"
+	uuid "github.com/satori/go.uuid"
 )
 
-type BatchRepository interface {
+type Repository interface {
 	//RessolvePage(page, limit int32, keyword string) (*utils.Page, error)
+	ResolveBatchByID(id uuid.UUID) (*Batch, error)
 	//RessolveBatchByIDs(IDs ...int32) ([]Batch, error)
-	RessolveBatchByID(ID int64) (*Batch, error)
 	//StoreBatch(batch *Batch) (*Batch, error)
 	//RemoveBatchByID(ID int32) (*Batch, error)
 	//RemoveBatchByIDs(IDs ...int32) ([]Batch, error)
@@ -23,27 +23,27 @@ const (
 	insertBatch = `INSERT INTO growth_batch(name, status, deleted, created) VALUES (:name, :status, :deleted, now())`
 )
 
-type batchRepository struct {
-	db *sql.DB
+type BatchRepository struct {
+	DB *sql.DB `inject:"db"`
 }
 
-func (repo *batchRepository) RessolveBatchByID(ID int64) (*Batch, error) {
+func (repo *BatchRepository) ResolveBatchByID(id uuid.UUID) (*Batch, error) {
 	query := dbmapper.Prepare(selectBatch + " WHERE id = :id").With(
-		dbmapper.Param("id", ID),
+		dbmapper.Param("id", id),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
 	}
 	batches := make([]Batch, 0)
-	log.Print("sql:", query.SQL())
-	log.Print("sql params:", query.Params())
-	err := Parse(repo.db.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
+	//log.Print("sql:", query.SQL())
+	//log.Print("sql params:", query.Params())
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
 
 	if err != nil {
 		return nil, err
 	}
 	if len(batches) < 1 {
-		return nil, fmt.Errorf("batch with id %d not found", ID)
+		return nil, fmt.Errorf("batch with id %s not found", id)
 	}
 	return &batches[0], nil
 }
@@ -67,8 +67,4 @@ func batchesMapper(rows *[]Batch) dbmapper.RowMapper {
 			return nil
 		})
 	}
-}
-
-func NewRepository(db *sql.DB) BatchRepository {
-	return &batchRepository{db}
 }

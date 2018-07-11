@@ -4,10 +4,11 @@ import (
 	"time"
 
 	"github.com/guregu/null"
+	"github.com/satori/go.uuid"
 )
 
 type Batch struct {
-	ID      int64       `json:"id"`
+	ID      uuid.UUID   `json:"id"`
 	Name    string      `json:"name"`
 	Status  int32       `json:"status"`
 	Deleted bool        `json:"deleted"`
