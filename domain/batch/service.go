@@ -16,11 +16,12 @@ type BatchService struct {
 	BatchRepository Repository `inject:"BatchRepository"`
 }
 
-func (svc *BatchService) ResolveBatchByID(ID uuid.UUID) (**Batch, error) {
+func (svc *BatchService) ResolveBatchByID(ID uuid.UUID) (*Batch, error) {
+	//fmt.Print(svc)
 	if batch, err := svc.BatchRepository.ResolveBatchByID(ID); err != nil {
 		return nil, fmt.Errorf("found an error: %s", err.Error())
 	} else {
-		return &batch, nil
+		return batch, nil
 	}
 }
 

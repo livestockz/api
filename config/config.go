@@ -17,7 +17,7 @@ type Config struct {
 
 func (cfg *Config) DatabaseDSN() string {
 	return fmt.Sprintf(
-		"%s:%s@%s:%s/%s?parseTime=true",
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		cfg.DatabaseUser,
 		cfg.DatabasePass,
 		cfg.DatabaseHost,

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/livestockz/api/domain/batch"
 	"github.com/livestockz/api/utils"
@@ -13,7 +15,7 @@ type Handler interface {
 }
 
 type BatchHandler struct {
-	BatchService *batch.BatchService `inject:"BatchService"`
+	BatchService batch.Service `inject:"BatchService"`
 }
 
 func (h *BatchHandler) HealthHandler(c *gin.Context) {
@@ -22,14 +24,16 @@ func (h *BatchHandler) HealthHandler(c *gin.Context) {
 
 func (h *BatchHandler) ResolveBatchByID(c *gin.Context) {
 	id := c.Params.ByName("id")
-	ID, err := uuid.FromString(id)
+	uid, err := uuid.FromString(id)
 	if err != nil {
 		utils.Error(c, err)
+		return
 	}
-
-	if batch, err := h.BatchService.ResolveBatchByID(ID); err != nil {
+	fmt.Print(h.BatchService)
+	if batch, err := h.BatchService.ResolveBatchByID(uid); err != nil {
 		utils.Error(c, err)
 	} else {
 		utils.Ok(c, &batch)
 	}
+	return
 }

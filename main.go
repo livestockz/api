@@ -34,7 +34,7 @@ func main() {
 	sc := gocontainer.NewContainer()
 	sc.RegisterService("db", db)
 	sc.RegisterService("config", cfg)
-	sc.RegisterService("BatchHandler", new(handler.BatchHandler))
+	sc.RegisterService("BatchHandler", BatchHandler)
 	sc.RegisterService("BatchService", new(batch.BatchService))
 	sc.RegisterService("BatchRepository", new(batch.BatchRepository))
 	sc.HandleGracefulShutdown(3 * time.Second)
