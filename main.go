@@ -42,6 +42,7 @@ func main() {
 		panic("Failed to start service container")
 	}
 	r.GET("/health", batchHandler.HealthHandler)
-	r.GET("/ping/:id", batchHandler.ResolveBatchByID)
+	r.POST("/growth/batch", batchHandler.StoreBatch)
+	r.GET("/growth/batch/:id", batchHandler.ResolveBatchByID)
 	r.Run(":9090")
 }

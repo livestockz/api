@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 05, 2018 at 08:14 PM
+-- Generation Time: Jul 12, 2018 at 10:21 AM
 -- Server version: 10.1.19-MariaDB
 -- PHP Version: 5.6.28
 
@@ -27,8 +27,8 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `feed` (
-  `id` int(11) NOT NULL,
-  `feed_id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
+  `feed_id` char(36) NOT NULL,
   `qty` decimal(10,2) NOT NULL,
   `remarks` varchar(255) NOT NULL,
   `reference` varchar(255) DEFAULT NULL
@@ -41,7 +41,7 @@ CREATE TABLE `feed` (
 --
 
 CREATE TABLE `feed_type` (
-  `id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `unit` varchar(50) NOT NULL,
   `status` tinyint(1) NOT NULL,
@@ -57,13 +57,21 @@ CREATE TABLE `feed_type` (
 --
 
 CREATE TABLE `growth_batch` (
-  `id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(45) NOT NULL,
   `status` int(4) NOT NULL,
   `deleted` tinyint(1) NOT NULL,
   `created` datetime NOT NULL,
   `updated` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `growth_batch`
+--
+
+INSERT INTO `growth_batch` (`id`, `name`, `status`, `deleted`, `created`, `updated`) VALUES
+('d5a4f3f5-84e8-11e8-8007-38d5473aae50', 'Batch 1', 1, 0, '2018-07-09 00:00:00', NULL),
+('d5a50916-84e8-11e8-8007-38d5473aae50', 'Batch 2', 1, 0, '2018-07-16 00:00:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -72,9 +80,9 @@ CREATE TABLE `growth_batch` (
 --
 
 CREATE TABLE `growth_batch_cycle` (
-  `id` int(11) NOT NULL,
-  `growth_batch_id` int(11) NOT NULL,
-  `growth_pool_id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
+  `growth_batch_id` char(36) NOT NULL,
+  `growth_pool_id` char(36) NOT NULL,
   `cycle_start` date NOT NULL,
   `cycle_finish` date DEFAULT NULL,
   `weight` decimal(10,2) NOT NULL,
@@ -90,8 +98,8 @@ CREATE TABLE `growth_batch_cycle` (
 --
 
 CREATE TABLE `growth_death` (
-  `id` int(11) NOT NULL,
-  `growth_batch_cycle_id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
+  `growth_batch_cycle_id` char(36) NOT NULL,
   `death_date` date NOT NULL,
   `amount` decimal(20,0) NOT NULL,
   `created` datetime NOT NULL,
@@ -105,11 +113,11 @@ CREATE TABLE `growth_death` (
 --
 
 CREATE TABLE `growth_feeding` (
-  `id` int(11) NOT NULL,
-  `growth_batch_cycle_id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
+  `growth_batch_cycle_id` char(36) NOT NULL,
   `feed_date` date NOT NULL,
   `amount` decimal(5,2) NOT NULL,
-  `feed_id` int(11) NOT NULL,
+  `feed_id` char(36) NOT NULL,
   `created` datetime NOT NULL,
   `updated` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -121,9 +129,9 @@ CREATE TABLE `growth_feeding` (
 --
 
 CREATE TABLE `growth_pool` (
-  `id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(45) NOT NULL,
-  `growth_pool_status_id` int(11) NOT NULL,
+  `growth_pool_status_id` char(36) NOT NULL,
   `deleted` tinyint(1) NOT NULL,
   `created` datetime NOT NULL,
   `updated` datetime DEFAULT NULL
@@ -136,7 +144,7 @@ CREATE TABLE `growth_pool` (
 --
 
 CREATE TABLE `growth_pool_status` (
-  `id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(45) NOT NULL,
   `deleted` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -148,7 +156,7 @@ CREATE TABLE `growth_pool_status` (
 --
 
 CREATE TABLE `growth_sales` (
-  `id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
   `sales_date` date NOT NULL,
   `weight` decimal(10,2) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -163,9 +171,9 @@ CREATE TABLE `growth_sales` (
 --
 
 CREATE TABLE `growth_sales_detail` (
-  `id` int(11) NOT NULL,
-  `sales_id` int(11) NOT NULL,
-  `growth_batch_cycle_id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
+  `sales_id` char(36) NOT NULL,
+  `growth_batch_cycle_id` char(36) NOT NULL,
   `amount` decimal(20,0) NOT NULL,
   `weight` decimal(10,2) NOT NULL,
   `detail_date` date NOT NULL
@@ -178,8 +186,8 @@ CREATE TABLE `growth_sales_detail` (
 --
 
 CREATE TABLE `growth_summary` (
-  `id` int(11) NOT NULL,
-  `growth_cycle_batch_id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
+  `growth_cycle_batch_id` char(36) NOT NULL,
   `summary_date` date NOT NULL,
   `adg` decimal(5,2) NOT NULL,
   `fcr` int(4) NOT NULL,
@@ -194,7 +202,7 @@ CREATE TABLE `growth_summary` (
 --
 
 CREATE TABLE `user` (
-  `id` int(11) NOT NULL,
+  `id` char(36) NOT NULL,
   `username` varchar(45) NOT NULL,
   `password` varchar(255) NOT NULL,
   `fullname` varchar(100) NOT NULL,
@@ -289,45 +297,6 @@ ALTER TABLE `growth_summary`
 ALTER TABLE `user`
   ADD PRIMARY KEY (`id`);
 
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `feed_type`
---
-ALTER TABLE `feed_type`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `growth_batch`
---
-ALTER TABLE `growth_batch`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `growth_death`
---
-ALTER TABLE `growth_death`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `growth_pool`
---
-ALTER TABLE `growth_pool`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `growth_pool_status`
---
-ALTER TABLE `growth_pool_status`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `growth_sales_detail`
---
-ALTER TABLE `growth_sales_detail`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `growth_summary`
---
-ALTER TABLE `growth_summary`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
 -- Constraints for dumped tables
 --
