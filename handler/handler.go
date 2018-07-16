@@ -82,10 +82,12 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 	if id == "" {
 		if batch.Name == "" {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
-		} else if result, err := h.BatchService.StoreGrowthBatch(id, &batch); err != nil {
+		} else if result, err := h.BatchService.StoreGrowthBatch(&batch); err != nil {
 			utils.Error(c, err)
+			return
 		} else {
-			utils.Ok(c, &result)
+			utils.Created(c, &result)
+			return
 		}
 	} else {
 		//convert id to UUID
@@ -104,7 +106,7 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
 			//fmt.Print("Incomplete provided data.")
 			return
-		} else if result, err := h.BatchService.StoreGrowthBatch(id, &batch); err != nil {
+		} else if result, err := h.BatchService.StoreGrowthBatch(&batch); err != nil {
 			utils.Error(c, err)
 			return
 		} else {
@@ -124,9 +126,7 @@ func (h *BatchHandler) RemoveGrowthBatchByID(c *gin.Context) {
 
 	if _, err := h.BatchService.RemoveGrowthBatchByID(uid); err != nil {
 		utils.Error(c, err)
-		return
 	} else {
-		utils.Ok(c, nil)
-		return
+		utils.NoContent(c)
 	}
 }

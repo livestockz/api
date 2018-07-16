@@ -15,7 +15,7 @@ type Repository interface {
 	ResolveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 	//ResolveBatchByIDs(IDs ...int32) ([]Batch, error)
 	InsertGrowthBatch(batch *Batch) (*Batch, error)
-	ModifyGrowthBatch(batch *Batch) (*Batch, error)
+	UpdateGrowthBatchByID(batch *Batch) (*Batch, error)
 	RemoveGrowthBatchByID(ID uuid.UUID) (*Batch, error)
 	//RemoveBatchByIDs(IDs ...int32) ([]Batch, error)
 }
@@ -34,9 +34,7 @@ type BatchRepository struct {
 func (repo *BatchRepository) ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error) {
 	var start int32
 	var end int32
-	if limit == 0 {
-		limit = 10
-	}
+
 	start = page * limit
 	end = start + limit
 	//get data by given page
@@ -161,7 +159,7 @@ func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
 	}
 }
 
-func (repo *BatchRepository) ModifyGrowthBatch(batch *Batch) (*Batch, error) {
+func (repo *BatchRepository) UpdateGrowthBatchByID(batch *Batch) (*Batch, error) {
 	//find whether if data exist
 	//fmt.Print("\n")
 	//fmt.Print(batch)
@@ -223,27 +221,9 @@ func (repo *BatchRepository) RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 	//fmt.Print("\n")
 	//fmt.Print(id)
 	//fmt.Print("\n")
-	finder := dbmapper.Prepare(selectGrowthBatch + " WHERE id = :id").With(
-		dbmapper.Param("id", id),
-	)
-	if err := finder.Error(); err != nil {
+	if _, err := repo.ResolveGrowthBatchByID(id); err != nil {
 		return nil, err
-	}
-	batches := make([]Batch, 0)
-	err := Parse(repo.DB.Query(finder.SQL(), finder.Params()...)).Map(batchesMapper(&batches))
-
-	if err != nil {
-		//fmt.Print(err)
-		//fmt.Print("\n")
-		return nil, err
-	}
-	if len(batches) < 1 {
-		return nil, fmt.Errorf("batch with id %s not found", id)
 	} else {
-		//update
-		//fmt.Println("update")
-		//fmt.Print("\n")
-		//prepare query and params
 		remover := dbmapper.Prepare(deleteGrowthBatch).With(
 			dbmapper.Param("id", id),
 		)
@@ -263,7 +243,7 @@ func (repo *BatchRepository) RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 				//fmt.Print("\n")
 				return nil, err
 			} else {
-				return &batches[0], nil
+				return nil, nil
 			}
 		}
 	}
