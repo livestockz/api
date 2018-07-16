@@ -37,7 +37,7 @@ func (svc *BatchService) ResolveGrowthBatchByID(id uuid.UUID) (*Batch, error) {
 
 func (svc *BatchService) StoreGrowthBatch(batch *Batch) (*Batch, error) {
 	if batch.ID == uuid.Nil {
-		//save
+		batch.ID = uuid.Must(uuid.NewV4())
 		if result, err := svc.BatchRepository.InsertGrowthBatch(batch); err != nil {
 			return nil, err
 		} else {

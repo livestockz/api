@@ -122,12 +122,9 @@ func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
 		//fmt.Println("insert")
 		//fmt.Print("\n")
 
-		//generate uuid
-		id := uuid.Must(uuid.NewV4())
-
 		//prepare query and params
 		insert := dbmapper.Prepare(insertGrowthBatch).With(
-			dbmapper.Param("id", id),
+			dbmapper.Param("id", batch.ID),
 			dbmapper.Param("name", batch.Name),
 			dbmapper.Param("status", batch.Status),
 			dbmapper.Param("deleted", batch.Deleted),
@@ -149,13 +146,13 @@ func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
 				return nil, err
 			} else {
 				//find inserted data from database based on generated id
-				res, err := repo.ResolveGrowthBatchByID(id)
+				res, err := repo.ResolveGrowthBatchByID(batch.ID)
 				return res, err
 			}
 		}
 	} else {
 		//fmt.Errorf("Unable to save data, ID existed.")
-		return nil, fmt.Errorf("Unable to save data, ID existed.")
+		return nil, fmt.Errorf("Unable to save data, ID exist.")
 	}
 }
 
