@@ -103,21 +103,14 @@ func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
 	//fmt.Print("\n")
 	//fmt.Print(batch)
 	//fmt.Print("\n")
-	finder := dbmapper.Prepare(selectGrowthBatch + " WHERE id = :id").With(
-		dbmapper.Param("id", batch.ID),
-	)
-	if err := finder.Error(); err != nil {
-		return nil, err
-	}
-	batches := make([]Batch, 0)
-	err := Parse(repo.DB.Query(finder.SQL(), finder.Params()...)).Map(batchesMapper(&batches))
+	_, err := repo.ResolveGrowthBatchByID(batch.ID)
 
-	if err != nil {
+	//if no error means that batch.ID already existed on database
+	if err == nil {
 		//fmt.Print(err)
 		//fmt.Print("\n")
-		return nil, err
-	}
-	if len(batches) < 1 {
+		return nil, fmt.Errorf("Batch with id %s already exist", batch.ID)
+	} else {
 		//insert
 		//fmt.Println("insert")
 		//fmt.Print("\n")
@@ -150,9 +143,6 @@ func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
 				return res, err
 			}
 		}
-	} else {
-		//fmt.Errorf("Unable to save data, ID existed.")
-		return nil, fmt.Errorf("Unable to save data, ID exist.")
 	}
 }
 
@@ -161,23 +151,12 @@ func (repo *BatchRepository) UpdateGrowthBatchByID(batch *Batch) (*Batch, error)
 	//fmt.Print("\n")
 	//fmt.Print(batch)
 	//fmt.Print("\n")
-	finder := dbmapper.Prepare(selectGrowthBatch + " WHERE id = :id").With(
-		dbmapper.Param("id", batch.ID),
-	)
-	if err := finder.Error(); err != nil {
-		return nil, err
-	}
-	batches := make([]Batch, 0)
-	err := Parse(repo.DB.Query(finder.SQL(), finder.Params()...)).Map(batchesMapper(&batches))
+	_, err := repo.ResolveGrowthBatchByID(batch.ID)
 
 	if err != nil {
 		//fmt.Print(err)
 		//fmt.Print("\n")
 		return nil, err
-	}
-	if len(batches) < 1 {
-		//fmt.Errorf("Unable to find existed data with ID %s", batch.ID)
-		return nil, fmt.Errorf("Unable to find existed data with ID %s", batch.ID)
 	} else {
 		//update
 		//fmt.Println("update")
