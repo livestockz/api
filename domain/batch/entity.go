@@ -14,4 +14,5 @@ type Batch struct {
 	Deleted bool        `json:"deleted"`
 	Created time.Time   `json:"created"`
 	Updated null.String `json:"updated"`
+	//Pool []Pool
 }

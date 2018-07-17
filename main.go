@@ -41,7 +41,17 @@ func main() {
 	if err := sc.Ready(); err != nil {
 		panic("Failed to start service container")
 	}
+
+	growth := r.Group("/growth")
+	{
+		growth.GET("/batch", batchHandler.ResolveGrowthBatchPage)
+		growth.GET("/batch/:id", batchHandler.ResolveGrowthBatchByID)
+		growth.POST("/batch", batchHandler.StoreGrowthBatch)
+		growth.PUT("/batch/:id", batchHandler.StoreGrowthBatch)
+		growth.DELETE("/batch/:id", batchHandler.RemoveGrowthBatchByID)
+	}
 	r.GET("/health", batchHandler.HealthHandler)
-	r.GET("/ping/:id", batchHandler.ResolveBatchByID)
+	//r.POST("/growth/batch", batchHandler.StoreGrowthBatch)
+	//r.GET("/growth/batch/:id", batchHandler.ResolveGrowthBatchByID)
 	r.Run(":9090")
 }

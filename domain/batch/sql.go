@@ -10,42 +10,207 @@ import (
 )
 
 type Repository interface {
-	//RessolvePage(page, limit int32, keyword string) (*utils.Page, error)
-	ResolveBatchByID(id uuid.UUID) (*Batch, error)
-	//RessolveBatchByIDs(IDs ...int32) ([]Batch, error)
-	//StoreBatch(batch *Batch) (*Batch, error)
-	//RemoveBatchByID(ID int32) (*Batch, error)
+	//ResolvePage(page, limit int32, keyword string) (*utils.Page, error)
+	ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error)
+	ResolveGrowthBatchByID(id uuid.UUID) (*Batch, error)
+	//ResolveBatchByIDs(IDs ...int32) ([]Batch, error)
+	InsertGrowthBatch(batch *Batch) (*Batch, error)
+	UpdateGrowthBatchByID(batch *Batch) (*Batch, error)
+	RemoveGrowthBatchByID(ID uuid.UUID) (*Batch, error)
 	//RemoveBatchByIDs(IDs ...int32) ([]Batch, error)
 }
 
 const (
-	selectBatch = `SELECT id, name, status, deleted, created, updated FROM growth_batch`
-	insertBatch = `INSERT INTO growth_batch(name, status, deleted, created) VALUES (:name, :status, :deleted, now())`
+	selectGrowthBatch = `SELECT id, name, status, deleted, created, updated FROM growth_batch`
+	insertGrowthBatch = `INSERT INTO growth_batch(id, name, status, deleted, created) VALUES (:id ,:name, :status, :deleted, NOW())`
+	updateGrowthBatch = `UPDATE growth_batch SET name = :name, status = :status, deleted = :deleted, updated = NOW() WHERE id = :id`
+	deleteGrowthBatch = `UPDATE growth_batch SET deleted = 1 WHERE id = :id`
 )
 
 type BatchRepository struct {
 	DB *sql.DB `inject:"db"`
 }
 
-func (repo *BatchRepository) ResolveBatchByID(id uuid.UUID) (*Batch, error) {
-	query := dbmapper.Prepare(selectBatch + " WHERE id = :id").With(
+func (repo *BatchRepository) ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error) {
+	var start int32
+	var end int32
+
+	start = page * limit
+	end = start + limit
+	//get data by given page
+	query := dbmapper.Prepare(selectGrowthBatch+" WHERE deleted = 0 LIMIT :start, :end").With(
+		dbmapper.Param("start", start),
+		dbmapper.Param("end", end),
+	)
+	if err := query.Error(); err != nil {
+		//log.Print(err.Error())
+		return nil, page, limit, 0, err
+	}
+
+	batches := make([]Batch, 0)
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
+
+	if err != nil {
+		//log.Print(err.Error())
+		return nil, page, limit, 0, err
+	}
+
+	//get total batch
+	summary := dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch WHERE deleted = 0")
+	if err := summary.Error(); err != nil {
+		//log.Print(err.Error())
+		return nil, page, limit, 0, err
+	}
+
+	var batchesCount int32
+	total := make([]int32, 0)
+	err = Parse(repo.DB.Query(summary.SQL())).Map(dbmapper.Int32("total", &total))
+	if err != nil {
+		//log.Print(err.Error())
+		return nil, page, limit, 0, err
+	} else {
+		batchesCount = total[0]
+		//log.Print(batchesCount)
+	}
+	//fmt.Println(&total)
+	return &batches, page, limit, batchesCount, nil
+
+}
+
+func (repo *BatchRepository) ResolveGrowthBatchByID(id uuid.UUID) (*Batch, error) {
+	query := dbmapper.Prepare(selectGrowthBatch + " WHERE id = :id").With(
 		dbmapper.Param("id", id),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
 	}
 	batches := make([]Batch, 0)
-	//log.Print("sql:", query.SQL())
-	//log.Print("sql params:", query.Params())
 	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(batchesMapper(&batches))
 
 	if err != nil {
 		return nil, err
 	}
 	if len(batches) < 1 {
-		return nil, fmt.Errorf("batch with id %s not found", id)
+		return nil, fmt.Errorf("growth batch with id %s not found", id)
 	}
 	return &batches[0], nil
+	// pool u/
+	//&batches[0].Pool = pools
+}
+
+func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
+
+	//insert
+	//fmt.Println("insert")
+	//fmt.Print("\n")
+
+	//prepare query and params
+	insert := dbmapper.Prepare(insertGrowthBatch).With(
+		dbmapper.Param("id", batch.ID),
+		dbmapper.Param("name", batch.Name),
+		dbmapper.Param("status", batch.Status),
+		dbmapper.Param("deleted", batch.Deleted),
+	)
+	//log.Print("sql:", insert.SQL())
+	//fmt.Print("\n")
+	//log.Print("sql params:", insert.Params())
+	//fmt.Print("\n")
+	//validate query
+	if err := insert.Error(); err != nil {
+		//log.Print(err.Error())
+		//fmt.Print("\n")
+		return nil, err
+	} else {
+		//insert to database
+		if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
+			//log.Print(err.Error())
+			//fmt.Print("\n")
+			return nil, err
+		} else {
+			//find inserted data from database based on generated id
+			res, err := repo.ResolveGrowthBatchByID(batch.ID)
+			return res, err
+		}
+	}
+}
+
+func (repo *BatchRepository) UpdateGrowthBatchByID(batch *Batch) (*Batch, error) {
+	//find whether if data exist
+	//fmt.Print("\n")
+	//fmt.Print(batch)
+	//fmt.Print("\n")
+	_, err := repo.ResolveGrowthBatchByID(batch.ID)
+
+	if err != nil {
+		//fmt.Print(err)
+		//fmt.Print("\n")
+		return nil, err
+	} else {
+		//update
+		//fmt.Println("update")
+		//fmt.Print("\n")
+		//prepare query and params
+		updater := dbmapper.Prepare(updateGrowthBatch).With(
+			dbmapper.Param("name", batch.Name),
+			dbmapper.Param("status", batch.Status),
+			dbmapper.Param("deleted", batch.Deleted),
+			dbmapper.Param("id", batch.ID),
+		)
+		//fmt.Print("\n")
+		//log.Print("sql:", updater.SQL())
+		//log.Print("sql params:", updater.Params())
+		//fmt.Print("\n")
+		//validate query
+		if err := updater.Error(); err != nil {
+			//log.Print(err.Error())
+			//fmt.Print("\n")
+			return nil, err
+		} else {
+			//update to database
+			if _, err := repo.DB.Exec(updater.SQL(), updater.Params()...); err != nil {
+				//log.Print(err.Error())
+				//fmt.Print("\n")
+				return nil, err
+			} else {
+				//find inserted data from database based on generated id
+				res, err := repo.ResolveGrowthBatchByID(batch.ID)
+				return res, err
+			}
+		}
+	}
+}
+
+func (repo *BatchRepository) RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error) {
+	//find whether if data exist
+	//fmt.Print("\n")
+	//fmt.Print(id)
+	//fmt.Print("\n")
+	if _, err := repo.ResolveGrowthBatchByID(id); err != nil {
+		return nil, err
+	} else {
+		remover := dbmapper.Prepare(deleteGrowthBatch).With(
+			dbmapper.Param("id", id),
+		)
+		//fmt.Print("\n")
+		//log.Print("sql:", remover.SQL())
+		//log.Print("sql params:", remover.Params())
+		//fmt.Print("\n")
+		//validate query
+		if err := remover.Error(); err != nil {
+			//log.Print(err.Error())
+			//fmt.Print("\n")
+			return nil, err
+		} else {
+			//update to database
+			if _, err := repo.DB.Exec(remover.SQL(), remover.Params()...); err != nil {
+				//log.Print(err.Error())
+				//fmt.Print("\n")
+				return nil, err
+			} else {
+				return nil, nil
+			}
+		}
+	}
 }
 
 func batchMapper(row *Batch) *dbmapper.MappedColumns {
