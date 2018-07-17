@@ -99,49 +99,37 @@ func (repo *BatchRepository) ResolveGrowthBatchByID(id uuid.UUID) (*Batch, error
 }
 
 func (repo *BatchRepository) InsertGrowthBatch(batch *Batch) (*Batch, error) {
-	//find whether if data exist
-	//fmt.Print("\n")
-	//fmt.Print(batch)
-	//fmt.Print("\n")
-	_, err := repo.ResolveGrowthBatchByID(batch.ID)
 
-	//if no error means that batch.ID already existed on database
-	if err == nil {
-		//fmt.Print(err)
+	//insert
+	//fmt.Println("insert")
+	//fmt.Print("\n")
+
+	//prepare query and params
+	insert := dbmapper.Prepare(insertGrowthBatch).With(
+		dbmapper.Param("id", batch.ID),
+		dbmapper.Param("name", batch.Name),
+		dbmapper.Param("status", batch.Status),
+		dbmapper.Param("deleted", batch.Deleted),
+	)
+	//log.Print("sql:", insert.SQL())
+	//fmt.Print("\n")
+	//log.Print("sql params:", insert.Params())
+	//fmt.Print("\n")
+	//validate query
+	if err := insert.Error(); err != nil {
+		//log.Print(err.Error())
 		//fmt.Print("\n")
-		return nil, fmt.Errorf("Batch with id %s already exist", batch.ID)
+		return nil, err
 	} else {
-		//insert
-		//fmt.Println("insert")
-		//fmt.Print("\n")
-
-		//prepare query and params
-		insert := dbmapper.Prepare(insertGrowthBatch).With(
-			dbmapper.Param("id", batch.ID),
-			dbmapper.Param("name", batch.Name),
-			dbmapper.Param("status", batch.Status),
-			dbmapper.Param("deleted", batch.Deleted),
-		)
-		//log.Print("sql:", insert.SQL())
-		//fmt.Print("\n")
-		//log.Print("sql params:", insert.Params())
-		//fmt.Print("\n")
-		//validate query
-		if err := insert.Error(); err != nil {
+		//insert to database
+		if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
 			//log.Print(err.Error())
 			//fmt.Print("\n")
 			return nil, err
 		} else {
-			//insert to database
-			if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
-				//log.Print(err.Error())
-				//fmt.Print("\n")
-				return nil, err
-			} else {
-				//find inserted data from database based on generated id
-				res, err := repo.ResolveGrowthBatchByID(batch.ID)
-				return res, err
-			}
+			//find inserted data from database based on generated id
+			res, err := repo.ResolveGrowthBatchByID(batch.ID)
+			return res, err
 		}
 	}
 }
