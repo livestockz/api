@@ -3,7 +3,6 @@ package batch
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	"github.com/ncrypthic/dbmapper"
 	. "github.com/ncrypthic/dbmapper/dialects/mysql"
@@ -217,7 +216,6 @@ func (repo *BatchRepository) RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 
 func (repo *BatchRepository) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, error) {
 	for _, v := range ids {
-		log.Print(v)
 		if _, err := repo.RemoveGrowthBatchByID(v); err != nil {
 			return nil, err
 		}
