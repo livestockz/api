@@ -15,11 +15,16 @@ type Handler interface {
 	ResolveGrowthBatchPage(*gin.Context)
 	ResolveGrowthBatchByID(*gin.Context)
 	StoreGrowthBatch(*gin.Context)
+	RemoveGrowthBatchByIDs(*gin.Context)
 	RemoveGrowthBatchByID(*gin.Context)
 }
 
 type BatchHandler struct {
 	BatchService batch.Service `inject:"batchService"`
+}
+
+type UUIDRequestModel struct {
+	Data []string `json:"ids"`
 }
 
 func (h *BatchHandler) HealthHandler(c *gin.Context) {
@@ -82,6 +87,7 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 	if id == "" {
 		if batch.Name == "" {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
+			return
 		} else if result, err := h.BatchService.StoreGrowthBatch(&batch); err != nil {
 			utils.Error(c, err)
 			return
@@ -111,6 +117,7 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 			return
 		} else {
 			utils.Ok(c, &result)
+			return
 		}
 	}
 }
@@ -128,5 +135,37 @@ func (h *BatchHandler) RemoveGrowthBatchByID(c *gin.Context) {
 		utils.Error(c, err)
 	} else {
 		utils.NoContent(c)
+	}
+}
+
+func (h *BatchHandler) RemoveGrowthBatchByIDs(c *gin.Context) {
+	//process json like : {"ids":["0b86bef7-0e16-47e6-9463-6a0b583e8d4c","6be6e63c-18f3-48ce-831f-f3210a576945"]}
+	var ids []uuid.UUID
+	reqBody := new(UUIDRequestModel)
+	err := c.Bind(reqBody)
+	if err != nil {
+		utils.Error(c, err)
+		return
+	} else if len(reqBody.Data) < 1 {
+		utils.Error(c, fmt.Errorf("No Batch to be removed."))
+	} else {
+		for _, v := range reqBody.Data {
+			//convert to UUID
+			id, err := uuid.FromString(v)
+			if err != nil {
+				utils.Error(c, err)
+				return
+			} else {
+				ids = append(ids, id)
+			}
+		}
+		//process to services
+		_, err := h.BatchService.RemoveGrowthBatchByIDs(ids)
+		if err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.NoContent(c)
+			return
+		}
 	}
 }
