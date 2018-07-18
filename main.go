@@ -48,6 +48,7 @@ func main() {
 		growth.GET("/batch/:id", batchHandler.ResolveGrowthBatchByID)
 		growth.POST("/batch", batchHandler.StoreGrowthBatch)
 		growth.PUT("/batch/:id", batchHandler.StoreGrowthBatch)
+		growth.DELETE("/batch", batchHandler.RemoveGrowthBatchByIDs)
 		growth.DELETE("/batch/:id", batchHandler.RemoveGrowthBatchByID)
 	}
 	r.GET("/health", batchHandler.HealthHandler)

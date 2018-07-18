@@ -11,6 +11,7 @@ type Service interface {
 	ResolveGrowthBatchByID(uuid.UUID) (*Batch, error)
 	StoreGrowthBatch(*Batch) (*Batch, error)
 	RemoveGrowthBatchByID(uuid.UUID) (*Batch, error)
+	RemoveGrowthBatchByIDs([]uuid.UUID) (*[]Batch, error)
 	//ClosePeriod(*Period) (*Period, error)
 	//CreatePeriod(Period) (Period, error)
 }
@@ -56,6 +57,14 @@ func (svc *BatchService) StoreGrowthBatch(batch *Batch) (*Batch, error) {
 func (svc *BatchService) RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error) {
 	if _, err := svc.BatchRepository.RemoveGrowthBatchByID(id); err != nil {
 		return nil, fmt.Errorf("found an error: %s", err.Error())
+	} else {
+		return nil, nil
+	}
+}
+
+func (svc *BatchService) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, error) {
+	if _, err := svc.BatchRepository.RemoveGrowthBatchByIDs(ids); err != nil {
+		return nil, err
 	} else {
 		return nil, nil
 	}

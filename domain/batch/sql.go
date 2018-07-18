@@ -16,7 +16,8 @@ type Repository interface {
 	//ResolveBatchByIDs(IDs ...int32) ([]Batch, error)
 	InsertGrowthBatch(batch *Batch) (*Batch, error)
 	UpdateGrowthBatchByID(batch *Batch) (*Batch, error)
-	RemoveGrowthBatchByID(ID uuid.UUID) (*Batch, error)
+	RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error)
+	RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, error)
 	//RemoveBatchByIDs(IDs ...int32) ([]Batch, error)
 }
 
@@ -211,6 +212,15 @@ func (repo *BatchRepository) RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 			}
 		}
 	}
+}
+
+func (repo *BatchRepository) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, error) {
+	for _, v := range ids {
+		if _, err := repo.RemoveGrowthBatchByID(v); err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
 }
 
 func batchMapper(row *Batch) *dbmapper.MappedColumns {
