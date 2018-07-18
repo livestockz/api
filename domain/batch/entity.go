@@ -16,3 +16,12 @@ type Batch struct {
 	Updated null.String `json:"updated"`
 	//Pool []Pool
 }
+
+type Pool struct {
+	ID      uuid.UUID   `json:"id"`
+	Name    string      `json:"name"`
+	Status  int32       `json:"status"`
+	Deleted bool        `json:"deleted"`
+	Created time.Time   `json:"created"`
+	Updated null.String `json:"updated"`
+}

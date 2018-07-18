@@ -44,13 +44,23 @@ func main() {
 
 	growth := r.Group("/growth")
 	{
+		//batch
 		growth.GET("/batch", batchHandler.ResolveGrowthBatchPage)
 		growth.GET("/batch/:id", batchHandler.ResolveGrowthBatchByID)
 		growth.POST("/batch", batchHandler.StoreGrowthBatch)
 		growth.PUT("/batch/:id", batchHandler.StoreGrowthBatch)
 		growth.DELETE("/batch", batchHandler.RemoveGrowthBatchByIDs)
 		growth.DELETE("/batch/:id", batchHandler.RemoveGrowthBatchByID)
+		//pool
+		growth.GET("/pool", batchHandler.ResolveGrowthPoolPage)
+		growth.GET("/pool/:id", batchHandler.ResolveGrowthPoolByID)
+		growth.POST("/pool", batchHandler.StoreGrowthPool)
+		growth.PUT("/pool/:id", batchHandler.StoreGrowthPool)
+		growth.DELETE("/pool", batchHandler.RemoveGrowthPoolByIDs)
+		growth.DELETE("/pool/:id", batchHandler.RemoveGrowthPoolByID)
+
 	}
+
 	r.GET("/health", batchHandler.HealthHandler)
 	//r.POST("/growth/batch", batchHandler.StoreGrowthBatch)
 	//r.GET("/growth/batch/:id", batchHandler.ResolveGrowthBatchByID)

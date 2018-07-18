@@ -14,6 +14,12 @@ type Service interface {
 	RemoveGrowthBatchByIDs([]uuid.UUID) (*[]Batch, error)
 	//ClosePeriod(*Period) (*Period, error)
 	//CreatePeriod(Period) (Period, error)
+
+	ResolveGrowthPoolPage(page int32, limit int32) (*[]Pool, int32, int32, int32, error)
+	ResolveGrowthPoolByID(uuid.UUID) (*Pool, error)
+	StoreGrowthPool(*Pool) (*Pool, error)
+	RemoveGrowthPoolByID(uuid.UUID) (*Pool, error)
+	RemoveGrowthPoolByIDs([]uuid.UUID) (*[]Pool, error)
 }
 
 type BatchService struct {
@@ -73,3 +79,54 @@ func (svc *BatchService) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, erro
 //func (svc *BatchService) ClosePeriod(p *Period) (*Period, error) {
 //
 //}
+
+//pools
+func (svc *BatchService) ResolveGrowthPoolPage(page int32, limit int32) (*[]Pool, int32, int32, int32, error) {
+	if pools, page, limit, total, err := svc.BatchRepository.ResolveGrowthPoolPage(page, limit); err != nil {
+		return nil, 0, 0, 0, err
+	} else {
+		return pools, page, limit, total, nil
+	}
+}
+
+func (svc *BatchService) ResolveGrowthPoolByID(id uuid.UUID) (*Pool, error) {
+	if pool, err := svc.BatchRepository.ResolveGrowthPoolByID(id); err != nil {
+		return nil, fmt.Errorf("found an error: %s", err.Error())
+	} else {
+		return pool, nil
+	}
+}
+
+func (svc *BatchService) StoreGrowthPool(pool *Pool) (*Pool, error) {
+	if pool.ID == uuid.Nil {
+		pool.ID = uuid.Must(uuid.NewV4())
+		if result, err := svc.BatchRepository.InsertGrowthPool(pool); err != nil {
+			return nil, err
+		} else {
+			return result, nil
+		}
+	} else {
+		//update
+		if result, err := svc.BatchRepository.UpdateGrowthPoolByID(pool); err != nil {
+			return nil, err
+		} else {
+			return result, nil
+		}
+	}
+}
+
+func (svc *BatchService) RemoveGrowthPoolByID(id uuid.UUID) (*Pool, error) {
+	if _, err := svc.BatchRepository.RemoveGrowthPoolByID(id); err != nil {
+		return nil, fmt.Errorf("found an error: %s", err.Error())
+	} else {
+		return nil, nil
+	}
+}
+
+func (svc *BatchService) RemoveGrowthPoolByIDs(ids []uuid.UUID) (*[]Pool, error) {
+	if _, err := svc.BatchRepository.RemoveGrowthPoolByIDs(ids); err != nil {
+		return nil, err
+	} else {
+		return nil, nil
+	}
+}
