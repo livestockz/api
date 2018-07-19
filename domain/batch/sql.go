@@ -31,12 +31,12 @@ const (
 	selectGrowthBatch = `SELECT id, name, status, deleted, created, updated FROM growth_batch`
 	insertGrowthBatch = `INSERT INTO growth_batch(id, name, status, deleted, created) VALUES (:id ,:name, :status, :deleted, NOW())`
 	updateGrowthBatch = `UPDATE growth_batch SET name = :name, status = :status, deleted = :deleted, updated = NOW() WHERE id = :id`
-	deleteGrowthBatch = `UPDATE growth_batch SET deleted = 1 WHERE id = :id`
+	deleteGrowthBatch = `UPDATE growth_batch SET deleted = 1, updated = NOW() WHERE id = :id`
 	//pool
 	selectGrowthPool = `SELECT id, name, status, deleted, created, updated FROM growth_pool`
 	insertGrowthPool = `INSERT INTO growth_pool(id, name, status, deleted, created) VALUES (:id ,:name, :status, :deleted, NOW())`
 	updateGrowthPool = `UPDATE growth_pool SET name = :name, status = :status, deleted = :deleted, updated = NOW() WHERE id = :id`
-	deleteGrowthPool = `UPDATE growth_pool SET deleted = 1 WHERE id = :id`
+	deleteGrowthPool = `UPDATE growth_pool SET deleted = 1, updated = NOW() WHERE id = :id`
 )
 
 type BatchRepository struct {
@@ -51,7 +51,7 @@ func (repo *BatchRepository) ResolveGrowthBatchPage(page int32, limit int32) (*[
 	start = page * limit
 	end = start + limit
 	//get data by given page
-	query := dbmapper.Prepare(selectGrowthBatch+" WHERE deleted = 0 LIMIT :start, :end").With(
+	query := dbmapper.Prepare(selectGrowthBatch+" WHERE deleted = 0 ORDER BY name ASC LIMIT :start, :end").With(
 		dbmapper.Param("start", start),
 		dbmapper.Param("end", end),
 	)
@@ -264,7 +264,7 @@ func (repo *BatchRepository) ResolveGrowthPoolPage(page int32, limit int32) (*[]
 	start = page * limit
 	end = start + limit
 	//get data by given page
-	query := dbmapper.Prepare(selectGrowthPool+" WHERE deleted = 0 LIMIT :start, :end").With(
+	query := dbmapper.Prepare(selectGrowthPool+" WHERE deleted = 0 ORDER BY name ASC LIMIT :start, :end").With(
 		dbmapper.Param("start", start),
 		dbmapper.Param("end", end),
 	)

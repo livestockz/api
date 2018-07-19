@@ -1,270 +1,319 @@
--- MySQL Workbench Forward Engineering
+-- phpMyAdmin SQL Dump
+-- version 4.5.1
+-- http://www.phpmyadmin.net
+--
+-- Host: 127.0.0.1
+-- Generation Time: Jul 19, 2018 at 10:44 AM
+-- Server version: 10.1.9-MariaDB
+-- PHP Version: 5.6.15
 
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
-
--- -----------------------------------------------------
--- Schema mydb
--- -----------------------------------------------------
--- -----------------------------------------------------
--- Schema livestock
--- -----------------------------------------------------
-DROP SCHEMA IF EXISTS `livestock` ;
-
--- -----------------------------------------------------
--- Schema livestock
--- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `livestock` DEFAULT CHARACTER SET latin1 ;
-USE `livestock` ;
-
--- -----------------------------------------------------
--- Table `livestock`.`feed_type`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`feed_type` ;
-
-CREATE TABLE IF NOT EXISTS `livestock`.`feed_type` (
-  `id` CHAR(36) NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `unit` VARCHAR(50) NOT NULL,
-  `status` TINYINT(1) NOT NULL,
-  `deleted` TINYINT(1) NOT NULL,
-  `created` DATETIME NOT NULL,
-  `updated` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
 
 
--- -----------------------------------------------------
--- Table `livestock`.`feed`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`feed` ;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
-CREATE TABLE IF NOT EXISTS `livestock`.`feed` (
-  `id` CHAR(36) NOT NULL,
-  `feed_id` CHAR(36) NOT NULL,
-  `qty` DECIMAL(10,2) NOT NULL,
-  `remarks` VARCHAR(255) NOT NULL,
-  `reference` VARCHAR(255) NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_feed_feed_type_idx` (`feed_id` ASC),
-  CONSTRAINT `fk_feed_feed_type`
-    FOREIGN KEY (`feed_id`)
-    REFERENCES `livestock`.`feed_type` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+--
+-- Database: `livestock`
+--
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_batch`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_batch` ;
+--
+-- Table structure for table `feed`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_batch` (
-  `id` CHAR(36) NOT NULL,
-  `name` VARCHAR(45) NOT NULL,
-  `status` INT(4) NOT NULL,
-  `deleted` TINYINT(1) NOT NULL,
-  `created` DATETIME NOT NULL,
-  `updated` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `feed` (
+  `id` char(36) NOT NULL,
+  `feed_id` char(36) NOT NULL,
+  `qty` decimal(10,2) NOT NULL,
+  `remarks` varchar(255) NOT NULL,
+  `reference` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_pool`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_pool` ;
+--
+-- Table structure for table `feed_type`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_pool` (
-  `id` CHAR(36) NOT NULL,
-  `name` VARCHAR(45) NOT NULL,
-  `status` INT(4) NOT NULL,
-  `deleted` TINYINT(1) NOT NULL,
-  `created` DATETIME NOT NULL,
-  `updated` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `feed_type` (
+  `id` char(36) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `unit` varchar(50) NOT NULL,
+  `status` tinyint(1) NOT NULL,
+  `deleted` tinyint(1) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_batch_cycle`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_batch_cycle` ;
+--
+-- Table structure for table `growth_batch`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_batch_cycle` (
-  `id` CHAR(36) NOT NULL,
-  `growth_batch_id` CHAR(36) NOT NULL,
-  `growth_pool_id` CHAR(36) NOT NULL,
-  `cycle_start` DATE NOT NULL,
-  `cycle_finish` DATE NULL DEFAULT NULL,
-  `weight` DECIMAL(10,2) NOT NULL,
-  `amount` DECIMAL(20,0) NOT NULL,
-  `created` DATETIME NOT NULL,
-  `updated` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_placement_batch_idx` (`growth_batch_id` ASC),
-  INDEX `fk_placement_pool_idx` (`growth_pool_id` ASC),
-  CONSTRAINT `fk_batch_cycle_batch`
-    FOREIGN KEY (`growth_batch_id`)
-    REFERENCES `livestock`.`growth_batch` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_batch_cycle_pool`
-    FOREIGN KEY (`growth_pool_id`)
-    REFERENCES `livestock`.`growth_pool` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_batch` (
+  `id` char(36) NOT NULL,
+  `name` varchar(45) NOT NULL,
+  `status` tinyint(1) NOT NULL,
+  `deleted` tinyint(1) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_death`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_death` ;
+--
+-- Table structure for table `growth_batch_cycle`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_death` (
-  `id` CHAR(36) NOT NULL,
-  `growth_batch_cycle_id` CHAR(36) NOT NULL,
-  `death_date` DATE NOT NULL,
-  `amount` DECIMAL(20,0) NOT NULL,
-  `created` DATETIME NOT NULL,
-  `updated` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_death_batch_cycle_idx` (`growth_batch_cycle_id` ASC),
-  CONSTRAINT `fk_death_batch_cycle`
-    FOREIGN KEY (`growth_batch_cycle_id`)
-    REFERENCES `livestock`.`growth_batch_cycle` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_batch_cycle` (
+  `id` char(36) NOT NULL,
+  `growth_batch_id` char(36) NOT NULL,
+  `growth_pool_id` char(36) NOT NULL,
+  `cycle_start` date NOT NULL,
+  `cycle_finish` date DEFAULT NULL,
+  `weight` decimal(10,2) NOT NULL,
+  `amount` decimal(20,0) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_feeding`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_feeding` ;
+--
+-- Table structure for table `growth_death`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_feeding` (
-  `id` CHAR(36) NOT NULL,
-  `growth_batch_cycle_id` CHAR(36) NOT NULL,
-  `feed_date` DATE NOT NULL,
-  `amount` DECIMAL(5,2) NOT NULL,
-  `feed_id` CHAR(36) NOT NULL,
-  `created` DATETIME NOT NULL,
-  `updated` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_feeding_batch_cycle_idx` (`growth_batch_cycle_id` ASC),
-  INDEX `fk_feeding_feed_idx` (`feed_id` ASC),
-  CONSTRAINT `fk_feeding_batch_cycle`
-    FOREIGN KEY (`growth_batch_cycle_id`)
-    REFERENCES `livestock`.`growth_batch_cycle` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_feeding_feed`
-    FOREIGN KEY (`feed_id`)
-    REFERENCES `livestock`.`feed` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_death` (
+  `id` char(36) NOT NULL,
+  `growth_batch_cycle_id` char(36) NOT NULL,
+  `death_date` date NOT NULL,
+  `amount` decimal(20,0) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_sales`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_sales` ;
+--
+-- Table structure for table `growth_feeding`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_sales` (
-  `id` CHAR(36) NOT NULL,
-  `sales_date` DATE NOT NULL,
-  `weight` DECIMAL(10,2) NOT NULL,
-  `user_id` INT(11) NOT NULL,
-  `timestamp` DATETIME NOT NULL,
-  `reference` VARCHAR(255) NULL DEFAULT NULL,
-  PRIMARY KEY (`id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_feeding` (
+  `id` char(36) NOT NULL,
+  `growth_batch_cycle_id` char(36) NOT NULL,
+  `feed_date` date NOT NULL,
+  `amount` decimal(5,2) NOT NULL,
+  `feed_id` char(36) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_sales_detail`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_sales_detail` ;
+--
+-- Table structure for table `growth_pool`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_sales_detail` (
-  `id` CHAR(36) NOT NULL,
-  `sales_id` CHAR(36) NOT NULL,
-  `growth_batch_cycle_id` CHAR(36) NOT NULL,
-  `amount` DECIMAL(20,0) NOT NULL,
-  `weight` DECIMAL(10,2) NOT NULL,
-  `detail_date` DATE NOT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_sales_batch_cycle_idx` (`growth_batch_cycle_id` ASC),
-  INDEX `fk_sales_detail_sales_idx` (`sales_id` ASC),
-  CONSTRAINT `fk_sales_batch_cycle`
-    FOREIGN KEY (`growth_batch_cycle_id`)
-    REFERENCES `livestock`.`growth_batch_cycle` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_sales_detail_sales`
-    FOREIGN KEY (`sales_id`)
-    REFERENCES `livestock`.`growth_sales` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_pool` (
+  `id` char(36) NOT NULL,
+  `name` varchar(45) NOT NULL,
+  `status` char(32) NOT NULL,
+  `deleted` tinyint(1) NOT NULL,
+  `created` datetime NOT NULL,
+  `updated` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`growth_summary`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`growth_summary` ;
+--
+-- Table structure for table `growth_sales`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`growth_summary` (
-  `id` CHAR(36) NOT NULL,
-  `growth_cycle_batch_id` CHAR(36) NOT NULL,
-  `summary_date` DATE NOT NULL,
-  `adg` DECIMAL(5,2) NOT NULL,
-  `fcr` INT(4) NOT NULL,
-  `sr` DECIMAL(5,2) NOT NULL,
-  `created` DATETIME NOT NULL,
-  PRIMARY KEY (`id`),
-  INDEX `fk_summary_cycle_batch_idx` (`growth_cycle_batch_id` ASC),
-  CONSTRAINT `fk_summary_cycle_batch`
-    FOREIGN KEY (`growth_cycle_batch_id`)
-    REFERENCES `livestock`.`growth_batch_cycle` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_sales` (
+  `id` char(36) NOT NULL,
+  `sales_date` date NOT NULL,
+  `weight` decimal(10,2) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `timestamp` datetime NOT NULL,
+  `reference` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
--- -----------------------------------------------------
--- Table `livestock`.`user`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `livestock`.`user` ;
+--
+-- Table structure for table `growth_sales_detail`
+--
 
-CREATE TABLE IF NOT EXISTS `livestock`.`user` (
-  `id` CHAR(36) NOT NULL,
-  `username` VARCHAR(45) NOT NULL,
-  `password` VARCHAR(255) NOT NULL,
-  `fullname` VARCHAR(100) NOT NULL,
-  `role` VARCHAR(255) NOT NULL,
-  `status` TINYINT(1) NOT NULL,
-  `deleted` TINYINT(1) NOT NULL,
-  PRIMARY KEY (`id`))
-ENGINE = InnoDB
-DEFAULT CHARACTER SET = latin1;
+CREATE TABLE `growth_sales_detail` (
+  `id` char(36) NOT NULL,
+  `sales_id` char(36) NOT NULL,
+  `growth_batch_cycle_id` char(36) NOT NULL,
+  `amount` decimal(20,0) NOT NULL,
+  `weight` decimal(10,2) NOT NULL,
+  `detail_date` date NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- --------------------------------------------------------
 
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+--
+-- Table structure for table `growth_summary`
+--
+
+CREATE TABLE `growth_summary` (
+  `id` char(36) NOT NULL,
+  `growth_cycle_batch_id` char(36) NOT NULL,
+  `summary_date` date NOT NULL,
+  `adg` decimal(5,2) NOT NULL,
+  `fcr` int(4) NOT NULL,
+  `sr` decimal(5,2) NOT NULL,
+  `created` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user`
+--
+
+CREATE TABLE `user` (
+  `id` char(36) NOT NULL,
+  `username` varchar(45) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `fullname` varchar(100) NOT NULL,
+  `role` varchar(255) NOT NULL,
+  `status` tinyint(1) NOT NULL,
+  `deleted` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `feed`
+--
+ALTER TABLE `feed`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_feed_feed_type_idx` (`feed_id`);
+
+--
+-- Indexes for table `feed_type`
+--
+ALTER TABLE `feed_type`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `growth_batch`
+--
+ALTER TABLE `growth_batch`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `growth_batch_cycle`
+--
+ALTER TABLE `growth_batch_cycle`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_placement_batch_idx` (`growth_batch_id`),
+  ADD KEY `fk_placement_pool_idx` (`growth_pool_id`);
+
+--
+-- Indexes for table `growth_death`
+--
+ALTER TABLE `growth_death`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_death_batch_cycle_idx` (`growth_batch_cycle_id`);
+
+--
+-- Indexes for table `growth_feeding`
+--
+ALTER TABLE `growth_feeding`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_feeding_batch_cycle_idx` (`growth_batch_cycle_id`),
+  ADD KEY `fk_feeding_feed_idx` (`feed_id`);
+
+--
+-- Indexes for table `growth_pool`
+--
+ALTER TABLE `growth_pool`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `status` (`status`);
+
+--
+-- Indexes for table `growth_sales`
+--
+ALTER TABLE `growth_sales`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `growth_sales_detail`
+--
+ALTER TABLE `growth_sales_detail`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_sales_batch_cycle_idx` (`growth_batch_cycle_id`),
+  ADD KEY `fk_sales_detail_sales_idx` (`sales_id`);
+
+--
+-- Indexes for table `growth_summary`
+--
+ALTER TABLE `growth_summary`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_summary_cycle_batch_idx` (`growth_cycle_batch_id`);
+
+--
+-- Indexes for table `user`
+--
+ALTER TABLE `user`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `feed`
+--
+ALTER TABLE `feed`
+  ADD CONSTRAINT `fk_feed_feed_type` FOREIGN KEY (`feed_id`) REFERENCES `feed_type` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `growth_batch_cycle`
+--
+ALTER TABLE `growth_batch_cycle`
+  ADD CONSTRAINT `fk_batch_cycle_batch` FOREIGN KEY (`growth_batch_id`) REFERENCES `growth_batch` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_batch_cycle_pool` FOREIGN KEY (`growth_pool_id`) REFERENCES `growth_pool` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `growth_death`
+--
+ALTER TABLE `growth_death`
+  ADD CONSTRAINT `fk_death_batch_cycle` FOREIGN KEY (`growth_batch_cycle_id`) REFERENCES `growth_batch_cycle` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `growth_feeding`
+--
+ALTER TABLE `growth_feeding`
+  ADD CONSTRAINT `fk_feeding_batch_cycle` FOREIGN KEY (`growth_batch_cycle_id`) REFERENCES `growth_batch_cycle` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_feeding_feed` FOREIGN KEY (`feed_id`) REFERENCES `feed` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `growth_sales_detail`
+--
+ALTER TABLE `growth_sales_detail`
+  ADD CONSTRAINT `fk_sales_batch_cycle` FOREIGN KEY (`growth_batch_cycle_id`) REFERENCES `growth_batch_cycle` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_sales_detail_sales` FOREIGN KEY (`sales_id`) REFERENCES `growth_sales` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `growth_summary`
+--
+ALTER TABLE `growth_summary`
+  ADD CONSTRAINT `fk_summary_cycle_batch` FOREIGN KEY (`growth_cycle_batch_id`) REFERENCES `growth_batch_cycle` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

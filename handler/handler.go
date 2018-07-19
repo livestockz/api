@@ -19,7 +19,6 @@ type Handler interface {
 	RemoveGrowthBatchByIDs(*gin.Context)
 	RemoveGrowthBatchByID(*gin.Context)
 	//pool
-
 	ResolveGrowthPoolPage(*gin.Context)
 	ResolveGrowthPoolByID(*gin.Context)
 	StoreGrowthPool(*gin.Context)
@@ -229,6 +228,9 @@ func (h *BatchHandler) StoreGrowthPool(c *gin.Context) {
 		if pool.Name == "" {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
 			return
+		} else if pool.Status != batch.Pool_Assigned && pool.Status != batch.Pool_Inactive && pool.Status != batch.Pool_Maintenance {
+			utils.Error(c, fmt.Errorf("Invalid pool status."))
+			return
 		} else if result, err := h.BatchService.StoreGrowthPool(&pool); err != nil {
 			utils.Error(c, err)
 			return
@@ -252,6 +254,9 @@ func (h *BatchHandler) StoreGrowthPool(c *gin.Context) {
 		} else if pool.Name == "" {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
 			//fmt.Print("Incomplete provided data.")
+			return
+		} else if pool.Status != batch.Pool_Assigned && pool.Status != batch.Pool_Inactive && pool.Status != batch.Pool_Maintenance {
+			utils.Error(c, fmt.Errorf("Invalid pool status."))
 			return
 		} else if result, err := h.BatchService.StoreGrowthPool(&pool); err != nil {
 			utils.Error(c, err)
