@@ -8,6 +8,9 @@ import (
 )
 
 const (
+	Deleted_True     string = "1"
+	Deleted_False    string = "0"
+	Deleted_Any      string = ""
 	Pool_Inactive    string = "inactive"
 	Pool_Assigned    string = "assigned"
 	Pool_Maintenance string = "maintenance"

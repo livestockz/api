@@ -11,14 +11,14 @@ import (
 
 type Repository interface {
 	//batch
-	ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error)
+	ResolveGrowthBatchPage(page int32, limit int32, deleted string) (*[]Batch, int32, int32, int32, error)
 	ResolveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 	InsertGrowthBatch(batch *Batch) (*Batch, error)
 	UpdateGrowthBatchByID(batch *Batch) (*Batch, error)
 	RemoveGrowthBatchByID(id uuid.UUID) (*Batch, error)
 	RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, error)
 	//pool
-	ResolveGrowthPoolPage(page int32, limit int32) (*[]Pool, int32, int32, int32, error)
+	ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error)
 	ResolveGrowthPoolByID(id uuid.UUID) (*Pool, error)
 	InsertGrowthPool(batch *Pool) (*Pool, error)
 	UpdateGrowthPoolByID(pool *Pool) (*Pool, error)
@@ -44,17 +44,31 @@ type BatchRepository struct {
 }
 
 //batch
-func (repo *BatchRepository) ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error) {
+func (repo *BatchRepository) ResolveGrowthBatchPage(page int32, limit int32, deleted string) (*[]Batch, int32, int32, int32, error) {
 	var start int32
 	var end int32
 
 	start = page * limit
-	end = start + limit
+	end = limit
+
 	//get data by given page
-	query := dbmapper.Prepare(selectGrowthBatch+" WHERE deleted = 0 ORDER BY name ASC LIMIT :start, :end").With(
-		dbmapper.Param("start", start),
-		dbmapper.Param("end", end),
-	)
+	var query dbmapper.QueryMapper
+	if deleted == Deleted_Any {
+		query = dbmapper.Prepare(selectGrowthBatch+" ORDER BY name ASC LIMIT :start, :end").With(
+			dbmapper.Param("start", start),
+			dbmapper.Param("end", end),
+		)
+	} else if deleted == Deleted_True {
+		query = dbmapper.Prepare(selectGrowthBatch+" WHERE deleted = 1 ORDER BY name ASC LIMIT :start, :end").With(
+			dbmapper.Param("start", start),
+			dbmapper.Param("end", end),
+		)
+	} else if deleted == Deleted_False {
+		query = dbmapper.Prepare(selectGrowthBatch+" WHERE deleted = 0 ORDER BY name ASC LIMIT :start, :end").With(
+			dbmapper.Param("start", start),
+			dbmapper.Param("end", end),
+		)
+	}
 	if err := query.Error(); err != nil {
 		//log.Print(err.Error())
 		return nil, page, limit, 0, err
@@ -69,7 +83,15 @@ func (repo *BatchRepository) ResolveGrowthBatchPage(page int32, limit int32) (*[
 	}
 
 	//get total batch
-	summary := dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch WHERE deleted = 0")
+	var summary dbmapper.QueryMapper
+	if deleted == Deleted_Any {
+		summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch")
+	} else if deleted == Deleted_True {
+		summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch WHERE deleted = 1")
+	} else if deleted == Deleted_False {
+		summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch WHERE deleted = 0")
+	}
+
 	if err := summary.Error(); err != nil {
 		//log.Print(err.Error())
 		return nil, page, limit, 0, err
@@ -257,17 +279,31 @@ func batchesMapper(rows *[]Batch) dbmapper.RowMapper {
 }
 
 //pool
-func (repo *BatchRepository) ResolveGrowthPoolPage(page int32, limit int32) (*[]Pool, int32, int32, int32, error) {
+func (repo *BatchRepository) ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error) {
 	var start int32
 	var end int32
 
 	start = page * limit
-	end = start + limit
+	end = limit
 	//get data by given page
-	query := dbmapper.Prepare(selectGrowthPool+" WHERE deleted = 0 ORDER BY name ASC LIMIT :start, :end").With(
-		dbmapper.Param("start", start),
-		dbmapper.Param("end", end),
-	)
+	var query dbmapper.QueryMapper
+	if deleted == Deleted_Any {
+		query = dbmapper.Prepare(selectGrowthPool+" ORDER BY name ASC LIMIT :start, :end").With(
+			dbmapper.Param("start", start),
+			dbmapper.Param("end", end),
+		)
+	} else if deleted == Deleted_True {
+		query = dbmapper.Prepare(selectGrowthPool+" WHERE deleted = 1 ORDER BY name ASC LIMIT :start, :end").With(
+			dbmapper.Param("start", start),
+			dbmapper.Param("end", end),
+		)
+	} else if deleted == Deleted_False {
+		query = dbmapper.Prepare(selectGrowthPool+" WHERE deleted = 0 ORDER BY name ASC LIMIT :start, :end").With(
+			dbmapper.Param("start", start),
+			dbmapper.Param("end", end),
+		)
+	}
+
 	if err := query.Error(); err != nil {
 		//log.Print(err.Error())
 		return nil, page, limit, 0, err
@@ -282,7 +318,14 @@ func (repo *BatchRepository) ResolveGrowthPoolPage(page int32, limit int32) (*[]
 	}
 
 	//get total batch
-	summary := dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_pool WHERE deleted = 0")
+	var summary dbmapper.QueryMapper
+	if deleted == Deleted_Any {
+		summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_pool")
+	} else if deleted == Deleted_True {
+		summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_pool WHERE deleted = 1")
+	} else if deleted == Deleted_False {
+		summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_pool WHERE deleted = 0")
+	}
 	if err := summary.Error(); err != nil {
 		//log.Print(err.Error())
 		return nil, page, limit, 0, err

@@ -43,6 +43,7 @@ func (h *BatchHandler) ResolveGrowthBatchPage(c *gin.Context) {
 	q := c.Request.URL.Query()
 	p := q.Get("page")
 	l := q.Get("limit")
+	d := q.Get("deleted")
 	page, err := strconv.Atoi(p)
 	if err != nil {
 		//log.Print("Invalid Page")
@@ -57,7 +58,10 @@ func (h *BatchHandler) ResolveGrowthBatchPage(c *gin.Context) {
 		//return
 		limit = 10
 	}
-	if batches, p, l, total, err := h.BatchService.ResolveGrowthBatchPage(int32(page), int32(limit)); err != nil {
+	if d != batch.Deleted_Any && d != batch.Deleted_False && d != batch.Deleted_True {
+		utils.Error(c, fmt.Errorf("Unknown deleted status"))
+		return
+	} else if batches, p, l, total, err := h.BatchService.ResolveGrowthBatchPage(int32(page), int32(limit), d); err != nil {
 		//log.Print(err.Error())
 		utils.Error(c, err)
 		return
@@ -183,6 +187,7 @@ func (h *BatchHandler) ResolveGrowthPoolPage(c *gin.Context) {
 	q := c.Request.URL.Query()
 	p := q.Get("page")
 	l := q.Get("limit")
+	d := q.Get("deleted")
 	page, err := strconv.Atoi(p)
 	if err != nil {
 		page = 0
@@ -191,7 +196,10 @@ func (h *BatchHandler) ResolveGrowthPoolPage(c *gin.Context) {
 	if err != nil {
 		limit = 10
 	}
-	if pools, p, l, total, err := h.BatchService.ResolveGrowthPoolPage(int32(page), int32(limit)); err != nil {
+	if d != batch.Deleted_Any && d != batch.Deleted_False && d != batch.Deleted_True {
+		utils.Error(c, fmt.Errorf("Unknown deleted status"))
+		return
+	} else if pools, p, l, total, err := h.BatchService.ResolveGrowthPoolPage(int32(page), int32(limit), d); err != nil {
 		utils.Error(c, err)
 		return
 	} else {

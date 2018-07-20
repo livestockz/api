@@ -7,7 +7,7 @@ import (
 )
 
 type Service interface {
-	ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error)
+	ResolveGrowthBatchPage(page int32, limit int32, deleted string) (*[]Batch, int32, int32, int32, error)
 	ResolveGrowthBatchByID(uuid.UUID) (*Batch, error)
 	StoreGrowthBatch(*Batch) (*Batch, error)
 	RemoveGrowthBatchByID(uuid.UUID) (*Batch, error)
@@ -15,7 +15,7 @@ type Service interface {
 	//ClosePeriod(*Period) (*Period, error)
 	//CreatePeriod(Period) (Period, error)
 
-	ResolveGrowthPoolPage(page int32, limit int32) (*[]Pool, int32, int32, int32, error)
+	ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error)
 	ResolveGrowthPoolByID(uuid.UUID) (*Pool, error)
 	StoreGrowthPool(*Pool) (*Pool, error)
 	RemoveGrowthPoolByID(uuid.UUID) (*Pool, error)
@@ -26,8 +26,8 @@ type BatchService struct {
 	BatchRepository Repository `inject:"batchRepository"`
 }
 
-func (svc *BatchService) ResolveGrowthBatchPage(page int32, limit int32) (*[]Batch, int32, int32, int32, error) {
-	if batches, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchPage(page, limit); err != nil {
+func (svc *BatchService) ResolveGrowthBatchPage(page int32, limit int32, deleted string) (*[]Batch, int32, int32, int32, error) {
+	if batches, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchPage(page, limit, deleted); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
 		return batches, page, limit, total, nil
@@ -81,8 +81,8 @@ func (svc *BatchService) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, erro
 //}
 
 //pools
-func (svc *BatchService) ResolveGrowthPoolPage(page int32, limit int32) (*[]Pool, int32, int32, int32, error) {
-	if pools, page, limit, total, err := svc.BatchRepository.ResolveGrowthPoolPage(page, limit); err != nil {
+func (svc *BatchService) ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error) {
+	if pools, page, limit, total, err := svc.BatchRepository.ResolveGrowthPoolPage(page, limit, deleted); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
 		return pools, page, limit, total, nil
