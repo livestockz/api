@@ -7,6 +7,15 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+const (
+	Deleted_True     string = "1"
+	Deleted_False    string = "0"
+	Deleted_Any      string = ""
+	Pool_Inactive    string = "inactive"
+	Pool_Assigned    string = "assigned"
+	Pool_Maintenance string = "maintenance"
+)
+
 type Batch struct {
 	ID      uuid.UUID   `json:"id"`
 	Name    string      `json:"name"`
@@ -15,4 +24,13 @@ type Batch struct {
 	Created time.Time   `json:"created"`
 	Updated null.String `json:"updated"`
 	//Pool []Pool
+}
+
+type Pool struct {
+	ID      uuid.UUID   `json:"id"`
+	Name    string      `json:"name"`
+	Status  string      `json:"status"`
+	Deleted bool        `json:"deleted"`
+	Created time.Time   `json:"created"`
+	Updated null.String `json:"updated"`
 }

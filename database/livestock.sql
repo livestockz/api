@@ -3,9 +3,9 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 12, 2018 at 10:21 AM
--- Server version: 10.1.19-MariaDB
--- PHP Version: 5.6.28
+-- Generation Time: Jul 19, 2018 at 10:44 AM
+-- Server version: 10.1.9-MariaDB
+-- PHP Version: 5.6.15
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -59,19 +59,11 @@ CREATE TABLE `feed_type` (
 CREATE TABLE `growth_batch` (
   `id` char(36) NOT NULL,
   `name` varchar(45) NOT NULL,
-  `status` int(4) NOT NULL,
+  `status` tinyint(1) NOT NULL,
   `deleted` tinyint(1) NOT NULL,
   `created` datetime NOT NULL,
   `updated` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Dumping data for table `growth_batch`
---
-
-INSERT INTO `growth_batch` (`id`, `name`, `status`, `deleted`, `created`, `updated`) VALUES
-('d5a4f3f5-84e8-11e8-8007-38d5473aae50', 'Batch 1', 1, 0, '2018-07-09 00:00:00', NULL),
-('d5a50916-84e8-11e8-8007-38d5473aae50', 'Batch 2', 1, 0, '2018-07-16 00:00:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -131,22 +123,10 @@ CREATE TABLE `growth_feeding` (
 CREATE TABLE `growth_pool` (
   `id` char(36) NOT NULL,
   `name` varchar(45) NOT NULL,
-  `growth_pool_status_id` char(36) NOT NULL,
+  `status` char(32) NOT NULL,
   `deleted` tinyint(1) NOT NULL,
   `created` datetime NOT NULL,
   `updated` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `growth_pool_status`
---
-
-CREATE TABLE `growth_pool_status` (
-  `id` char(36) NOT NULL,
-  `name` varchar(45) NOT NULL,
-  `deleted` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -262,13 +242,7 @@ ALTER TABLE `growth_feeding`
 --
 ALTER TABLE `growth_pool`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_pool_status_idx` (`growth_pool_status_id`);
-
---
--- Indexes for table `growth_pool_status`
---
-ALTER TABLE `growth_pool_status`
-  ADD PRIMARY KEY (`id`);
+  ADD KEY `status` (`status`);
 
 --
 -- Indexes for table `growth_sales`
@@ -326,12 +300,6 @@ ALTER TABLE `growth_death`
 ALTER TABLE `growth_feeding`
   ADD CONSTRAINT `fk_feeding_batch_cycle` FOREIGN KEY (`growth_batch_cycle_id`) REFERENCES `growth_batch_cycle` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_feeding_feed` FOREIGN KEY (`feed_id`) REFERENCES `feed` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `growth_pool`
---
-ALTER TABLE `growth_pool`
-  ADD CONSTRAINT `fk_pool_status` FOREIGN KEY (`growth_pool_status_id`) REFERENCES `growth_pool_status` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `growth_sales_detail`
