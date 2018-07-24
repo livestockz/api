@@ -27,12 +27,21 @@ type FeedType struct {
 }
 
 type Feed struct {
-	ID        uuid.UUID   `json:"id"`
-	FeedType  uuid.UUID   `json:"feed_type"`
-	Qty       int32       `json:"qty"`
-	Remarks   string      `json:"remarks"`
-	Reference null.String `json:"reference"`
-	Deleted   bool        `json:"deleted"`
-	Created   time.Time   `json:"created"`
-	Updated   null.String `json:"updated"`
+	ID         uuid.UUID   `json:"id"`
+	FeedType   FeedType    `json:"feed_type"`
+	FeedTypeID uuid.UUID   `json:"-"`
+	Qty        float64     `json:"qty"`
+	Remarks    string      `json:"remarks"`
+	Reference  null.String `json:"reference"`
+	Origin     string      `json:"origin"`
+	Created    time.Time   `json:"created"`
+}
+
+type FeedAdjustment struct {
+	ID         uuid.UUID `json:"id"`
+	FeedType   FeedType  `json:"feed_type"`
+	FeedTypeID uuid.UUID `json:"-"`
+	Qty        float64   `json:"qty"`
+	Remarks    string    `json:"remarks"`
+	Created    time.Time `json:"created"`
 }

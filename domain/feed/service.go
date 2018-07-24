@@ -13,11 +13,13 @@ type Service interface {
 	RemoveFeedTypeByID(uuid.UUID) (*FeedType, error)
 	RemoveFeedTypeByIDs([]uuid.UUID) (*[]FeedType, error)
 
-	ResolveFeedPage(page int32, limit int32, deleted string) (*[]Feed, int32, int32, int32, error)
+	ResolveFeedPage(page int32, limit int32) (*[]Feed, int32, int32, int32, error)
 	ResolveFeedByID(uuid.UUID) (*Feed, error)
 	StoreFeed(*Feed) (*Feed, error)
-	RemoveFeedByID(uuid.UUID) (*Feed, error)
-	RemoveFeedByIDs([]uuid.UUID) (*[]Feed, error)
+
+	ResolveFeedAdjustmentPage(page int32, limit int32) (*[]FeedAdjustment, int32, int32, int32, error)
+	ResolveFeedAdjustmentByID(uuid.UUID) (*FeedAdjustment, error)
+	StoreFeedAdjustment(*FeedAdjustment) (*FeedAdjustment, error)
 }
 
 type FeedService struct {
@@ -76,8 +78,8 @@ func (svc *FeedService) RemoveFeedTypeByIDs(ids []uuid.UUID) (*[]FeedType, error
 }
 
 //feed
-func (svc *FeedService) ResolveFeedPage(page int32, limit int32, deleted string) (*[]Feed, int32, int32, int32, error) {
-	if feeds, page, limit, total, err := svc.FeedRepository.ResolveFeedPage(page, limit, deleted); err != nil {
+func (svc *FeedService) ResolveFeedPage(page int32, limit int32) (*[]Feed, int32, int32, int32, error) {
+	if feeds, page, limit, total, err := svc.FeedRepository.ResolveFeedPage(page, limit); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
 		return feeds, page, limit, total, nil
@@ -93,35 +95,36 @@ func (svc *FeedService) ResolveFeedByID(id uuid.UUID) (*Feed, error) {
 }
 
 func (svc *FeedService) StoreFeed(feed *Feed) (*Feed, error) {
-	if feed.ID == uuid.Nil {
-		feed.ID = uuid.Must(uuid.NewV4())
-		if result, err := svc.FeedRepository.InsertFeed(feed); err != nil {
-			return nil, err
-		} else {
-			return result, nil
-		}
-	} else {
-		//update
-		if result, err := svc.FeedRepository.UpdateFeedByID(feed); err != nil {
-			return nil, err
-		} else {
-			return result, nil
-		}
-	}
-}
-
-func (svc *FeedService) RemoveFeedByID(id uuid.UUID) (*Feed, error) {
-	if _, err := svc.FeedRepository.RemoveFeedByID(id); err != nil {
-		return nil, fmt.Errorf("found an error: %s", err.Error())
-	} else {
-		return nil, nil
-	}
-}
-
-func (svc *FeedService) RemoveFeedByIDs(ids []uuid.UUID) (*[]Feed, error) {
-	if _, err := svc.FeedRepository.RemoveFeedByIDs(ids); err != nil {
+	feed.ID = uuid.Must(uuid.NewV4())
+	if result, err := svc.FeedRepository.InsertFeed(feed); err != nil {
 		return nil, err
 	} else {
-		return nil, nil
+		return result, nil
+	}
+}
+
+//feed adjustment
+func (svc *FeedService) ResolveFeedAdjustmentPage(page int32, limit int32) (*[]FeedAdjustment, int32, int32, int32, error) {
+	if feedAdjustments, page, limit, total, err := svc.FeedRepository.ResolveFeedAdjustmentPage(page, limit); err != nil {
+		return nil, 0, 0, 0, err
+	} else {
+		return feedAdjustments, page, limit, total, nil
+	}
+}
+
+func (svc *FeedService) ResolveFeedAdjustmentByID(id uuid.UUID) (*FeedAdjustment, error) {
+	if feedAdjustment, err := svc.FeedRepository.ResolveFeedAdjustmentByID(id); err != nil {
+		return nil, fmt.Errorf("found an error: %s", err.Error())
+	} else {
+		return feedAdjustment, nil
+	}
+}
+
+func (svc *FeedService) StoreFeedAdjustment(feedAdjustment *FeedAdjustment) (*FeedAdjustment, error) {
+	feedAdjustment.ID = uuid.Must(uuid.NewV4())
+	if result, err := svc.FeedRepository.InsertFeedAdjustment(feedAdjustment); err != nil {
+		return nil, err
+	} else {
+		return result, nil
 	}
 }

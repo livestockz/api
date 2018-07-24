@@ -74,12 +74,14 @@ func main() {
 		feed.DELETE("/feed-type", feedHandler.RemoveFeedTypeByIDs)
 		feed.DELETE("/feed-type/:id", feedHandler.RemoveFeedTypeByID)
 		//feeding
-		feed.GET("/feeding", feedHandler.ResolveFeedPage)
-		feed.GET("/feeding/:id", feedHandler.ResolveFeedByID)
-		feed.POST("/feeding", feedHandler.StoreFeed)
-		feed.PUT("/feeding/:id", feedHandler.StoreFeed)
-		feed.DELETE("/feeding", feedHandler.RemoveFeedByIDs)
-		feed.DELETE("/feeding/:id", feedHandler.RemoveFeedByID)
+		feed.GET("/transaction", feedHandler.ResolveFeedPage)
+		feed.GET("/transaction/:id", feedHandler.ResolveFeedByID)
+		feed.POST("/transaction", feedHandler.StoreFeed)
+
+		//adjustment
+		feed.GET("/adjustment", feedHandler.ResolveFeedAdjustmentPage)
+		feed.GET("/adjustment/:id", feedHandler.ResolveFeedAdjustmentByID)
+		feed.POST("/adjustment", feedHandler.StoreFeedAdjustment)
 	}
 
 	r.GET("/health", batchHandler.HealthHandler)
