@@ -34,3 +34,17 @@ type Pool struct {
 	Created time.Time   `json:"created"`
 	Updated null.String `json:"updated"`
 }
+
+type BatchCycle struct {
+	ID      uuid.UUID   `json:"id"`
+	Batch   Batch       `json:"batch"`
+	BatchID uuid.UUID   `json:"-"`
+	Pool    Pool        `json:"pool"`
+	PoolID  uuid.UUID   `json:"-"`
+	Weight  float64     `json:"weight"`
+	Amount  float64     `json:"amount"`
+	Start   time.Time   `json:"start"`
+	Finish  null.String `json:"finish"`
+	Created time.Time   `json:"created"`
+	Updated null.String `json:"updated"`
+}

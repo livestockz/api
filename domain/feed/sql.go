@@ -12,7 +12,6 @@ import (
 type Repository interface {
 	//feedtype
 	ResolveFeedTypePage(page int32, limit int32, deleted string) (*[]FeedType, int32, int32, int32, error)
-	ResolveFeedTypeByIDs(ids []uuid.UUID) (*[]FeedType, error)
 	ResolveFeedTypeByID(id uuid.UUID) (*FeedType, error)
 	InsertFeedType(feedtype *FeedType) (*FeedType, error)
 	UpdateFeedTypeByID(feedtype *FeedType) (*FeedType, error)
@@ -109,24 +108,7 @@ func (repo *FeedRepository) ResolveFeedTypePage(page int32, limit int32, deleted
 	return &feedtypes, page, limit, feedtypesCount, nil
 
 }
-func (repo *FeedRepository) ResolveFeedTypeByIDs(ids []uuid.UUID) (*[]FeedType, error) {
-	var IDs []interface{}
-	for _, id := range ids {
-		IDs = append(IDs, id)
-	}
-	query := dbmapper.Prepare(selectMultipleFeedType).With(
-		dbmapper.Param("ids", IDs...),
-	)
-	if err := query.Error(); err != nil {
-		return nil, err
-	}
-	feedTypes := make([]FeedType, 0)
-	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedtypesMapper(&feedTypes))
-	if err != nil {
-		return nil, err
-	}
-	return &feedTypes, nil
-}
+
 func (repo *FeedRepository) ResolveFeedTypeByID(id uuid.UUID) (*FeedType, error) {
 	query := dbmapper.Prepare(selectFeedType + " WHERE id = :id").With(
 		dbmapper.Param("id", id),

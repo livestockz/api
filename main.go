@@ -63,6 +63,11 @@ func main() {
 		growth.PUT("/pool/:id", batchHandler.StoreGrowthPool)
 		growth.DELETE("/pool", batchHandler.RemoveGrowthPoolByIDs)
 		growth.DELETE("/pool/:id", batchHandler.RemoveGrowthPoolByID)
+		//batch cycle
+		growth.GET("/batch-cycle", batchHandler.ResolveGrowthBatchCyclePage)
+		growth.GET("/batch-cycle/:id", batchHandler.ResolveGrowthBatchCycleByID)
+		growth.POST("/batch-cycle", batchHandler.StoreGrowthBatchCycle)
+		growth.PUT("/batch-cycle/:id", batchHandler.StoreGrowthBatchCycle)
 	}
 	feed := r.Group("/feed")
 	{

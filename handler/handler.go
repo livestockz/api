@@ -87,6 +87,8 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 		//compare uuid to batch
 		//save if valid
 		var uid, err = uuid.FromString(id)
+		log.Print(uid, "\n")
+		log.Print(batch.ID)
 		if err != nil {
 			utils.Error(c, fmt.Errorf("Unable to convert given ID to UUID"))
 		} else if batch.ID != uid {
@@ -100,7 +102,6 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 		}
 		return
 	}
-	return
 }
 
 func (h *BatchHandler) RemoveGrowthBatchByID(c *gin.Context) {
@@ -226,7 +227,6 @@ func (h *BatchHandler) StoreGrowthPool(c *gin.Context) {
 		}
 		return
 	}
-	return
 }
 
 func (h *BatchHandler) RemoveGrowthPoolByID(c *gin.Context) {
@@ -273,6 +273,80 @@ func (h *BatchHandler) RemoveGrowthPoolByIDs(c *gin.Context) {
 		return
 	}
 	return
+}
+
+//growth batch cycle
+func (h *BatchHandler) ResolveGrowthBatchCyclePage(c *gin.Context) {
+	//capture something like this: http://localhost:9090/growth/batch-cycle?page=1&limit=10
+	q := c.Request.URL.Query()
+	p := q.Get("page")
+	l := q.Get("limit")
+	page, err := strconv.Atoi(p)
+	if err != nil {
+		page = 0
+	}
+	limit, err := strconv.Atoi(l)
+	if err != nil {
+		limit = 10
+	}
+
+	if batchCycles, p, l, total, err := h.BatchService.ResolveGrowthBatchCyclePage(int32(page), int32(limit)); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Page(c, batchCycles, p, l, total)
+	}
+	return
+}
+
+func (h *BatchHandler) ResolveGrowthBatchCycleByID(c *gin.Context) {
+	id := c.Params.ByName("id")
+	uid, err := uuid.FromString(id)
+
+	if err != nil {
+		utils.Error(c, err)
+	} else if batchCycle, err := h.BatchService.ResolveGrowthBatchCycleByID(uid); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Ok(c, &batchCycle)
+	}
+	return
+}
+
+func (h *BatchHandler) StoreGrowthBatchCycle(c *gin.Context) {
+
+	var id = c.Params.ByName("id")
+	var bc batch.BatchCycle
+	c.BindJSON(&bc)
+	log.Print("batch:", bc.Batch)
+	log.Print("weight:", bc.Weight)
+	log.Print("amount:", bc.Amount)
+	if id == "" {
+		if bc.Weight == 0 || bc.Amount == 0 {
+			utils.Error(c, fmt.Errorf("Incomplete provided data."))
+		} else if result, err := h.BatchService.StoreGrowthBatchCycle(&bc); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Created(c, &result)
+		}
+		return
+	} else {
+		//convert id to UUID
+		//compare uuid to batch cycle
+		//save if valid
+		var uid, err = uuid.FromString(id)
+		if err != nil {
+			utils.Error(c, fmt.Errorf("Unable to convert given ID to UUID"))
+		} else if bc.ID != uid {
+			utils.Error(c, fmt.Errorf("Inconsistent ID."))
+		} else if bc.Weight == 0 || bc.Amount == 0 {
+			utils.Error(c, fmt.Errorf("Incomplete provided data."))
+		} else if result, err := h.BatchService.StoreGrowthBatchCycle(&bc); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Ok(c, &result)
+		}
+		return
+	}
 }
 
 //feedtype
@@ -347,7 +421,6 @@ func (h *FeedHandler) StoreFeedType(c *gin.Context) {
 		}
 		return
 	}
-	return
 }
 
 func (h *FeedHandler) RemoveFeedTypeByID(c *gin.Context) {
