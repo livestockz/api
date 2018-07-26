@@ -17,13 +17,13 @@ const (
 )
 
 type FeedType struct {
-	ID      uuid.UUID   `json:"id"`
-	Name    string      `json:"name"`
-	Unit    string      `json:"unit"`
-	Status  int32       `json:"status"`
-	Deleted bool        `json:"deleted"`
-	Created time.Time   `json:"created"`
-	Updated null.String `json:"updated"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Unit    string    `json:"unit"`
+	Status  int32     `json:"status"`
+	Deleted bool      `json:"deleted"`
+	Created time.Time `json:"created"`
+	Updated null.Time `json:"updated"`
 }
 
 type Feed struct {

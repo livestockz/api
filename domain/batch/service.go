@@ -20,8 +20,8 @@ type Service interface {
 	RemoveGrowthPoolByID(uuid.UUID) (*Pool, error)
 	RemoveGrowthPoolByIDs([]uuid.UUID) (*[]Pool, error)
 	//batch cycle
-	ResolveGrowthBatchCyclePage(page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error)
-	ResolveGrowthBatchCycleByID(uuid.UUID) (*BatchCycle, error)
+	ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error)
+	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
 	StoreGrowthBatchCycle(*BatchCycle) (*BatchCycle, error)
 }
 
@@ -79,10 +79,6 @@ func (svc *BatchService) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, erro
 	}
 }
 
-//func (svc *BatchService) ClosePeriod(p *Period) (*Period, error) {
-//
-//}
-
 //pools
 func (svc *BatchService) ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error) {
 	if pools, page, limit, total, err := svc.BatchRepository.ResolveGrowthPoolPage(page, limit, deleted); err != nil {
@@ -134,16 +130,16 @@ func (svc *BatchService) RemoveGrowthPoolByIDs(ids []uuid.UUID) (*[]Pool, error)
 	}
 }
 
-func (svc *BatchService) ResolveGrowthBatchCyclePage(page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error) {
-	if batchCycles, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchCyclePage(page, limit); err != nil {
+func (svc *BatchService) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error) {
+	if batchCycles, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchCyclePage(batchId, page, limit); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
 		return batchCycles, page, limit, total, nil
 	}
 }
 
-func (svc *BatchService) ResolveGrowthBatchCycleByID(id uuid.UUID) (*BatchCycle, error) {
-	if batchCycle, err := svc.BatchRepository.ResolveGrowthBatchCycleByID(id); err != nil {
+func (svc *BatchService) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error) {
+	if batchCycle, err := svc.BatchRepository.ResolveGrowthBatchCycleByID(batchId, cycleId); err != nil {
 		return nil, fmt.Errorf("found an error: %s", err.Error())
 	} else {
 		return batchCycle, nil

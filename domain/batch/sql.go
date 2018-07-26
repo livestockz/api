@@ -25,8 +25,8 @@ type Repository interface {
 	RemoveGrowthPoolByID(id uuid.UUID) (*Pool, error)
 	RemoveGrowthPoolByIDs(ids []uuid.UUID) (*[]Pool, error)
 	//batch cycle
-	ResolveGrowthBatchCyclePage(page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error)
-	ResolveGrowthBatchCycleByID(id uuid.UUID) (*BatchCycle, error)
+	ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error)
+	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
 	InsertGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCycle, error)
 	UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) (*BatchCycle, error)
 }
@@ -479,7 +479,7 @@ func poolsMapper(rows *[]Pool) dbmapper.RowMapper {
 }
 
 //batch cycle
-func (repo *BatchRepository) ResolveGrowthBatchCyclePage(page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error) {
+func (repo *BatchRepository) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error) {
 	var start int32
 	var end int32
 
@@ -488,7 +488,8 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(page int32, limit int32
 
 	//get data by given page
 	var query dbmapper.QueryMapper
-	query = dbmapper.Prepare(selectGrowthBatchCycle+" ORDER BY created ASC LIMIT :start, :end").With(
+	query = dbmapper.Prepare(selectGrowthBatchCycle+" WHERE growth_batch_id=:batchId ORDER BY created ASC LIMIT :start, :end").With(
+		dbmapper.Param("batchId", batchId),
 		dbmapper.Param("start", start),
 		dbmapper.Param("end", end),
 	)
@@ -523,7 +524,9 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(page int32, limit int32
 
 	//get total batch cycle
 	var summary dbmapper.QueryMapper
-	summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch_cycle")
+	summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM growth_batch_cycle WHERE growth_batch_id=:batchId").With(
+		dbmapper.Param("batchId", batchId),
+	)
 
 	if err := summary.Error(); err != nil {
 		//log.Print(err.Error())
@@ -532,7 +535,7 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(page int32, limit int32
 
 	var batchCyclesCount int32
 	total := make([]int32, 0)
-	err = Parse(repo.DB.Query(summary.SQL())).Map(dbmapper.Int32("total", &total))
+	err = Parse(repo.DB.Query(summary.SQL(), summary.Params()...)).Map(dbmapper.Int32("total", &total))
 	if err != nil {
 		return nil, page, limit, 0, err
 	} else {
@@ -542,9 +545,10 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(page int32, limit int32
 
 }
 
-func (repo *BatchRepository) ResolveGrowthBatchCycleByID(id uuid.UUID) (*BatchCycle, error) {
-	query := dbmapper.Prepare(selectGrowthBatchCycle + " WHERE id = :id").With(
-		dbmapper.Param("id", id),
+func (repo *BatchRepository) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error) {
+	query := dbmapper.Prepare(selectGrowthBatchCycle+" WHERE id = :cycleId and growth_batch_id = :batchId").With(
+		dbmapper.Param("cycleId", cycleId),
+		dbmapper.Param("batchId", batchId),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
@@ -557,7 +561,7 @@ func (repo *BatchRepository) ResolveGrowthBatchCycleByID(id uuid.UUID) (*BatchCy
 	}
 
 	if len(batchCycles) < 1 {
-		return nil, fmt.Errorf("growth batch cycle with id %s not found", id)
+		return nil, fmt.Errorf("growth batch cycle with batchId %s and cycleId %s not found", batchId, cycleId)
 	} else {
 		if batch, err := repo.ResolveGrowthBatchByID(batchCycles[0].BatchID); err != nil {
 			return nil, err
@@ -595,7 +599,7 @@ func (repo *BatchRepository) InsertGrowthBatchCycle(batchCycle *BatchCycle) (*Ba
 			return nil, err
 		} else {
 			//find inserted data from database based on generated id
-			res, err := repo.ResolveGrowthBatchCycleByID(batchCycle.ID)
+			res, err := repo.ResolveGrowthBatchCycleByID(batchCycle.Batch.ID, batchCycle.ID)
 			return res, err
 		}
 	}
@@ -603,7 +607,7 @@ func (repo *BatchRepository) InsertGrowthBatchCycle(batchCycle *BatchCycle) (*Ba
 
 func (repo *BatchRepository) UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) (*BatchCycle, error) {
 	//find whether if data exist
-	_, err := repo.ResolveGrowthBatchCycleByID(batchCycle.ID)
+	_, err := repo.ResolveGrowthBatchCycleByID(batchCycle.Batch.ID, batchCycle.ID)
 
 	if err != nil {
 		return nil, err
@@ -628,7 +632,7 @@ func (repo *BatchRepository) UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) 
 				return nil, err
 			} else {
 				//find inserted data from database based on generated id
-				res, err := repo.ResolveGrowthBatchCycleByID(batchCycle.ID)
+				res, err := repo.ResolveGrowthBatchCycleByID(batchCycle.Batch.ID, batchCycle.ID)
 				return res, err
 			}
 		}

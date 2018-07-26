@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +53,7 @@ func (h *BatchHandler) ResolveGrowthBatchPage(c *gin.Context) {
 }
 
 func (h *BatchHandler) ResolveGrowthBatchByID(c *gin.Context) {
-	id := c.Params.ByName("id")
+	id := c.Params.ByName("batchId")
 	uid, err := uuid.FromString(id)
 
 	if err != nil {
@@ -69,7 +68,7 @@ func (h *BatchHandler) ResolveGrowthBatchByID(c *gin.Context) {
 
 func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 
-	var id = c.Params.ByName("id")
+	var id = c.Params.ByName("batchId")
 	var batch batch.Batch
 	c.BindJSON(&batch)
 
@@ -87,8 +86,6 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 		//compare uuid to batch
 		//save if valid
 		var uid, err = uuid.FromString(id)
-		log.Print(uid, "\n")
-		log.Print(batch.ID)
 		if err != nil {
 			utils.Error(c, fmt.Errorf("Unable to convert given ID to UUID"))
 		} else if batch.ID != uid {
@@ -105,7 +102,7 @@ func (h *BatchHandler) StoreGrowthBatch(c *gin.Context) {
 }
 
 func (h *BatchHandler) RemoveGrowthBatchByID(c *gin.Context) {
-	id := c.Params.ByName("id")
+	id := c.Params.ByName("batchId")
 	uid, err := uuid.FromString(id)
 
 	if err != nil {
@@ -177,7 +174,7 @@ func (h *BatchHandler) ResolveGrowthPoolPage(c *gin.Context) {
 }
 
 func (h *BatchHandler) ResolveGrowthPoolByID(c *gin.Context) {
-	id := c.Params.ByName("id")
+	id := c.Params.ByName("poolId")
 	uid, err := uuid.FromString(id)
 
 	if err != nil {
@@ -192,7 +189,7 @@ func (h *BatchHandler) ResolveGrowthPoolByID(c *gin.Context) {
 
 func (h *BatchHandler) StoreGrowthPool(c *gin.Context) {
 
-	var id = c.Params.ByName("id")
+	var id = c.Params.ByName("poolId")
 	var pool batch.Pool
 	c.BindJSON(&pool)
 
@@ -230,7 +227,7 @@ func (h *BatchHandler) StoreGrowthPool(c *gin.Context) {
 }
 
 func (h *BatchHandler) RemoveGrowthPoolByID(c *gin.Context) {
-	id := c.Params.ByName("id")
+	id := c.Params.ByName("poolId")
 	uid, err := uuid.FromString(id)
 
 	if err != nil {
@@ -281,6 +278,13 @@ func (h *BatchHandler) ResolveGrowthBatchCyclePage(c *gin.Context) {
 	q := c.Request.URL.Query()
 	p := q.Get("page")
 	l := q.Get("limit")
+	id := c.Params.ByName("batchId")
+
+	batchId, err := uuid.FromString(id)
+	if err != nil {
+		utils.Error(c, err)
+		return
+	}
 	page, err := strconv.Atoi(p)
 	if err != nil {
 		page = 0
@@ -290,7 +294,7 @@ func (h *BatchHandler) ResolveGrowthBatchCyclePage(c *gin.Context) {
 		limit = 10
 	}
 
-	if batchCycles, p, l, total, err := h.BatchService.ResolveGrowthBatchCyclePage(int32(page), int32(limit)); err != nil {
+	if batchCycles, p, l, total, err := h.BatchService.ResolveGrowthBatchCyclePage(batchId, int32(page), int32(limit)); err != nil {
 		utils.Error(c, err)
 	} else {
 		utils.Page(c, batchCycles, p, l, total)
@@ -299,12 +303,21 @@ func (h *BatchHandler) ResolveGrowthBatchCyclePage(c *gin.Context) {
 }
 
 func (h *BatchHandler) ResolveGrowthBatchCycleByID(c *gin.Context) {
-	id := c.Params.ByName("id")
-	uid, err := uuid.FromString(id)
-
+	bid := c.Params.ByName("batchId")
+	cid := c.Params.ByName("cycleId")
+	batchId, err := uuid.FromString(bid)
 	if err != nil {
 		utils.Error(c, err)
-	} else if batchCycle, err := h.BatchService.ResolveGrowthBatchCycleByID(uid); err != nil {
+		return
+	}
+
+	cycleId, err := uuid.FromString(cid)
+	if err != nil {
+		utils.Error(c, err)
+		return
+	}
+
+	if batchCycle, err := h.BatchService.ResolveGrowthBatchCycleByID(batchId, cycleId); err != nil {
 		utils.Error(c, err)
 	} else {
 		utils.Ok(c, &batchCycle)
@@ -314,14 +327,18 @@ func (h *BatchHandler) ResolveGrowthBatchCycleByID(c *gin.Context) {
 
 func (h *BatchHandler) StoreGrowthBatchCycle(c *gin.Context) {
 
-	var id = c.Params.ByName("id")
+	var bid = c.Params.ByName("batchId")
+	var cid = c.Params.ByName("cycleId")
+
 	var bc batch.BatchCycle
 	c.BindJSON(&bc)
-	log.Print("batch:", bc.Batch)
-	log.Print("weight:", bc.Weight)
-	log.Print("amount:", bc.Amount)
-	if id == "" {
-		if bc.Weight == 0 || bc.Amount == 0 {
+	if bid == "" {
+		utils.Error(c, fmt.Errorf("Invalid batch id."))
+	} else if cid == "" {
+		_, err := uuid.FromString(bid)
+		if err != nil {
+			utils.Error(c, err)
+		} else if bc.Weight == 0 || bc.Amount == 0 {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
 		} else if result, err := h.BatchService.StoreGrowthBatchCycle(&bc); err != nil {
 			utils.Error(c, err)
@@ -333,10 +350,22 @@ func (h *BatchHandler) StoreGrowthBatchCycle(c *gin.Context) {
 		//convert id to UUID
 		//compare uuid to batch cycle
 		//save if valid
-		var uid, err = uuid.FromString(id)
+		batchId, err := uuid.FromString(bid)
 		if err != nil {
-			utils.Error(c, fmt.Errorf("Unable to convert given ID to UUID"))
-		} else if bc.ID != uid {
+			utils.Error(c, err)
+			return
+		}
+
+		cid := c.Params.ByName("cycleId")
+		cycleId, err := uuid.FromString(cid)
+		if err != nil {
+			utils.Error(c, err)
+			return
+		}
+
+		if bc.Batch.ID != batchId {
+			utils.Error(c, fmt.Errorf("Inconsistent ID."))
+		} else if bc.ID != cycleId {
 			utils.Error(c, fmt.Errorf("Inconsistent ID."))
 		} else if bc.Weight == 0 || bc.Amount == 0 {
 			utils.Error(c, fmt.Errorf("Incomplete provided data."))
@@ -510,7 +539,6 @@ func (h *FeedHandler) StoreFeed(c *gin.Context) {
 
 	var f feed.Feed
 	c.BindJSON(&f)
-	log.Print(&f)
 	if f.Qty == 0 {
 		utils.Error(c, fmt.Errorf("Qty must smaller or bigger than 0"))
 	} else if f.Remarks != feed.Feed_Adjustment && f.Remarks != feed.Feed_Incoming && f.Remarks != feed.Feed_Outgoing {

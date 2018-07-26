@@ -17,22 +17,22 @@ const (
 )
 
 type Batch struct {
-	ID      uuid.UUID   `json:"id"`
-	Name    string      `json:"name"`
-	Status  int32       `json:"status"`
-	Deleted bool        `json:"deleted"`
-	Created time.Time   `json:"created"`
-	Updated null.String `json:"updated"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Status  int32     `json:"status"`
+	Deleted bool      `json:"deleted"`
+	Created time.Time `json:"created"`
+	Updated null.Time `json:"updated"`
 	//Pool []Pool
 }
 
 type Pool struct {
-	ID      uuid.UUID   `json:"id"`
-	Name    string      `json:"name"`
-	Status  string      `json:"status"`
-	Deleted bool        `json:"deleted"`
-	Created time.Time   `json:"created"`
-	Updated null.String `json:"updated"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	Status  string    `json:"status"`
+	Deleted bool      `json:"deleted"`
+	Created time.Time `json:"created"`
+	Updated null.Time `json:"updated"`
 }
 
 type BatchCycle struct {
@@ -46,5 +46,5 @@ type BatchCycle struct {
 	Start   time.Time   `json:"start"`
 	Finish  null.String `json:"finish"`
 	Created time.Time   `json:"created"`
-	Updated null.String `json:"updated"`
+	Updated null.Time   `json:"updated"`
 }
