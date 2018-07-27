@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +19,6 @@ func main() {
 	cfg := config.Get()
 	db, err := sql.Open("mysql", cfg.DatabaseDSN())
 	if err != nil {
-		log.Print(err)
 		panic("Failed connect to database.")
 	}
 
@@ -51,18 +49,23 @@ func main() {
 	{
 		//batch
 		growth.GET("/batch", batchHandler.ResolveGrowthBatchPage)
-		growth.GET("/batch/:id", batchHandler.ResolveGrowthBatchByID)
+		growth.GET("/batch/:batchId", batchHandler.ResolveGrowthBatchByID)
 		growth.POST("/batch", batchHandler.StoreGrowthBatch)
-		growth.PUT("/batch/:id", batchHandler.StoreGrowthBatch)
+		growth.PUT("/batch/:batchId", batchHandler.StoreGrowthBatch)
 		growth.DELETE("/batch", batchHandler.RemoveGrowthBatchByIDs)
-		growth.DELETE("/batch/:id", batchHandler.RemoveGrowthBatchByID)
+		growth.DELETE("/batch/:batchId", batchHandler.RemoveGrowthBatchByID)
 		//pool
 		growth.GET("/pool", batchHandler.ResolveGrowthPoolPage)
-		growth.GET("/pool/:id", batchHandler.ResolveGrowthPoolByID)
+		growth.GET("/pool/:poolId", batchHandler.ResolveGrowthPoolByID)
 		growth.POST("/pool", batchHandler.StoreGrowthPool)
-		growth.PUT("/pool/:id", batchHandler.StoreGrowthPool)
+		growth.PUT("/pool/:poolId", batchHandler.StoreGrowthPool)
 		growth.DELETE("/pool", batchHandler.RemoveGrowthPoolByIDs)
-		growth.DELETE("/pool/:id", batchHandler.RemoveGrowthPoolByID)
+		growth.DELETE("/pool/:poolId", batchHandler.RemoveGrowthPoolByID)
+		//batch cycle
+		growth.GET("/batch/:batchId/cycle", batchHandler.ResolveGrowthBatchCyclePage)
+		growth.GET("/batch/:batchId/cycle/:cycleId", batchHandler.ResolveGrowthBatchCycleByID)
+		growth.POST("/batch/:batchId/cycle", batchHandler.StoreGrowthBatchCycle)
+		growth.PUT("/batch/:batchId/cycle/:cycleId", batchHandler.StoreGrowthBatchCycle)
 	}
 	feed := r.Group("/feed")
 	{

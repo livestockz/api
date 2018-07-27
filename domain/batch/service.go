@@ -7,19 +7,22 @@ import (
 )
 
 type Service interface {
+	//batch
 	ResolveGrowthBatchPage(page int32, limit int32, deleted string) (*[]Batch, int32, int32, int32, error)
 	ResolveGrowthBatchByID(uuid.UUID) (*Batch, error)
 	StoreGrowthBatch(*Batch) (*Batch, error)
 	RemoveGrowthBatchByID(uuid.UUID) (*Batch, error)
 	RemoveGrowthBatchByIDs([]uuid.UUID) (*[]Batch, error)
-	//ClosePeriod(*Period) (*Period, error)
-	//CreatePeriod(Period) (Period, error)
-
+	//pool
 	ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error)
 	ResolveGrowthPoolByID(uuid.UUID) (*Pool, error)
 	StoreGrowthPool(*Pool) (*Pool, error)
 	RemoveGrowthPoolByID(uuid.UUID) (*Pool, error)
 	RemoveGrowthPoolByIDs([]uuid.UUID) (*[]Pool, error)
+	//batch cycle
+	ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error)
+	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
+	StoreGrowthBatchCycle(*BatchCycle) (*BatchCycle, error)
 }
 
 type BatchService struct {
@@ -76,10 +79,6 @@ func (svc *BatchService) RemoveGrowthBatchByIDs(ids []uuid.UUID) (*[]Batch, erro
 	}
 }
 
-//func (svc *BatchService) ClosePeriod(p *Period) (*Period, error) {
-//
-//}
-
 //pools
 func (svc *BatchService) ResolveGrowthPoolPage(page int32, limit int32, deleted string) (*[]Pool, int32, int32, int32, error) {
 	if pools, page, limit, total, err := svc.BatchRepository.ResolveGrowthPoolPage(page, limit, deleted); err != nil {
@@ -128,5 +127,39 @@ func (svc *BatchService) RemoveGrowthPoolByIDs(ids []uuid.UUID) (*[]Pool, error)
 		return nil, err
 	} else {
 		return nil, nil
+	}
+}
+
+func (svc *BatchService) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error) {
+	if batchCycles, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchCyclePage(batchId, page, limit); err != nil {
+		return nil, 0, 0, 0, err
+	} else {
+		return batchCycles, page, limit, total, nil
+	}
+}
+
+func (svc *BatchService) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error) {
+	if batchCycle, err := svc.BatchRepository.ResolveGrowthBatchCycleByID(batchId, cycleId); err != nil {
+		return nil, fmt.Errorf("found an error: %s", err.Error())
+	} else {
+		return batchCycle, nil
+	}
+}
+
+func (svc *BatchService) StoreGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCycle, error) {
+	if batchCycle.ID == uuid.Nil {
+		batchCycle.ID = uuid.Must(uuid.NewV4())
+		if result, err := svc.BatchRepository.InsertGrowthBatchCycle(batchCycle); err != nil {
+			return nil, err
+		} else {
+			return result, nil
+		}
+	} else {
+		//update
+		if result, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle); err != nil {
+			return nil, err
+		} else {
+			return result, nil
+		}
 	}
 }
