@@ -13,9 +13,9 @@ type Service interface {
 	RemoveFeedTypeByID(uuid.UUID) (*FeedType, error)
 	RemoveFeedTypeByIDs([]uuid.UUID) (*[]FeedType, error)
 
-	ResolveFeedPage(page int32, limit int32) (*[]Feed, int32, int32, int32, error)
-	ResolveFeedByID(uuid.UUID) (*Feed, error)
-	StoreFeed(*Feed) (*Feed, error)
+	ResolveFeedIncomingPage(page int32, limit int32) (*[]FeedIncoming, int32, int32, int32, error)
+	ResolveFeedIncomingByID(uuid.UUID) (*FeedIncoming, error)
+	StoreFeedIncoming(*FeedIncoming) (*FeedIncoming, error)
 
 	ResolveFeedAdjustmentPage(page int32, limit int32) (*[]FeedAdjustment, int32, int32, int32, error)
 	ResolveFeedAdjustmentByID(uuid.UUID) (*FeedAdjustment, error)
@@ -77,26 +77,26 @@ func (svc *FeedService) RemoveFeedTypeByIDs(ids []uuid.UUID) (*[]FeedType, error
 	}
 }
 
-//feed
-func (svc *FeedService) ResolveFeedPage(page int32, limit int32) (*[]Feed, int32, int32, int32, error) {
-	if feeds, page, limit, total, err := svc.FeedRepository.ResolveFeedPage(page, limit); err != nil {
+//feed incoming
+func (svc *FeedService) ResolveFeedIncomingPage(page int32, limit int32) (*[]FeedIncoming, int32, int32, int32, error) {
+	if feedIncomings, page, limit, total, err := svc.FeedRepository.ResolveFeedIncomingPage(page, limit); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
-		return feeds, page, limit, total, nil
+		return feedIncomings, page, limit, total, nil
 	}
 }
 
-func (svc *FeedService) ResolveFeedByID(id uuid.UUID) (*Feed, error) {
-	if feed, err := svc.FeedRepository.ResolveFeedByID(id); err != nil {
+func (svc *FeedService) ResolveFeedIncomingByID(id uuid.UUID) (*FeedIncoming, error) {
+	if feedIncoming, err := svc.FeedRepository.ResolveFeedIncomingByID(id); err != nil {
 		return nil, fmt.Errorf("found an error: %s", err.Error())
 	} else {
-		return feed, nil
+		return feedIncoming, nil
 	}
 }
 
-func (svc *FeedService) StoreFeed(feed *Feed) (*Feed, error) {
-	feed.ID = uuid.Must(uuid.NewV4())
-	if result, err := svc.FeedRepository.InsertFeed(feed); err != nil {
+func (svc *FeedService) StoreFeedIncoming(feedIncoming *FeedIncoming) (*FeedIncoming, error) {
+	feedIncoming.ID = uuid.Must(uuid.NewV4())
+	if result, err := svc.FeedRepository.InsertFeedIncoming(feedIncoming); err != nil {
 		return nil, err
 	} else {
 		return result, nil

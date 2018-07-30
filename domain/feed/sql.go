@@ -18,10 +18,10 @@ type Repository interface {
 	UpdateFeedTypeByID(feedtype *FeedType) (*FeedType, error)
 	RemoveFeedTypeByID(id uuid.UUID) (*FeedType, error)
 	RemoveFeedTypeByIDs(ids []uuid.UUID) (*[]FeedType, error)
-	//feed
-	ResolveFeedPage(page int32, limit int32) (*[]Feed, int32, int32, int32, error)
-	ResolveFeedByID(id uuid.UUID) (*Feed, error)
-	InsertFeed(feed *Feed) (*Feed, error)
+	//feed incoming
+	ResolveFeedIncomingPage(page int32, limit int32) (*[]FeedIncoming, int32, int32, int32, error)
+	ResolveFeedIncomingByID(id uuid.UUID) (*FeedIncoming, error)
+	InsertFeedIncoming(feedIncoming *FeedIncoming) (*FeedIncoming, error)
 	//feed adjustment
 	ResolveFeedAdjustmentPage(page int32, limit int32) (*[]FeedAdjustment, int32, int32, int32, error)
 	ResolveFeedAdjustmentByID(id uuid.UUID) (*FeedAdjustment, error)
@@ -35,9 +35,9 @@ const (
 	insertFeedType         = `INSERT INTO feed_type(id, name, unit, status, deleted, created) VALUES (:id ,:name, :unit, :status, :deleted, NOW())`
 	updateFeedType         = `UPDATE feed_type SET name = :name, unit = :unit, status = :status, deleted = :deleted, updated = NOW() WHERE id = :id`
 	deleteFeedType         = `UPDATE feed_type SET deleted = 1, updated = NOW() WHERE id = :id`
-	//feed
-	selectFeed = `SELECT id, feed_type_id, qty, remarks, reference, origin, created FROM feed`
-	insertFeed = `INSERT INTO feed(id, feed_type_id, qty, remarks, reference, origin, created) VALUES (:id ,:feedtype, :qty, :remarks, :reference, :origin, NOW())`
+	//feed incoming
+	selectFeedIncoming = `SELECT id, feed_type_id, qty, remarks, created FROM feed_incoming`
+	insertFeedIncoming = `INSERT INTO feed_incoming(id, feed_type_id, qty, remarks, created) VALUES (:id ,:feedtype, :qty, :remarks, NOW())`
 	//feed adjustment
 	selectFeedAdjustment = `SELECT id, feed_type_id, qty, remarks, created FROM feed_adjustment`
 	insertFeedAdjustment = `INSERT INTO feed_adjustment(id, feed_type_id, qty, remarks, created) VALUES (:id ,:feedtype, :qty, :remarks, NOW())`
@@ -256,8 +256,8 @@ func feedtypesMapper(rows *[]FeedType) dbmapper.RowMapper {
 	}
 }
 
-//feed
-func (repo *FeedRepository) ResolveFeedPage(page int32, limit int32) (*[]Feed, int32, int32, int32, error) {
+//feed incoming
+func (repo *FeedRepository) ResolveFeedIncomingPage(page int32, limit int32) (*[]FeedIncoming, int32, int32, int32, error) {
 	var start int32
 	var end int32
 
@@ -266,7 +266,7 @@ func (repo *FeedRepository) ResolveFeedPage(page int32, limit int32) (*[]Feed, i
 
 	//get data by given page
 	var query dbmapper.QueryMapper
-	query = dbmapper.Prepare(selectFeed+" ORDER BY created ASC LIMIT :start, :end").With(
+	query = dbmapper.Prepare(selectFeedIncoming+" ORDER BY created ASC LIMIT :start, :end").With(
 		dbmapper.Param("start", start),
 		dbmapper.Param("end", end),
 	)
@@ -275,80 +275,78 @@ func (repo *FeedRepository) ResolveFeedPage(page int32, limit int32) (*[]Feed, i
 		return nil, page, limit, 0, err
 	}
 
-	feeds := make([]Feed, 0)
-	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedsMapper(&feeds))
+	feedIncomings := make([]FeedIncoming, 0)
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedIncomingsMapper(&feedIncomings))
 
 	if err != nil {
 		return nil, page, limit, 0, err
 	}
 
-	var newFeeds []Feed
-	for _, feed := range feeds {
-		if feedType, err := repo.ResolveFeedTypeByID(feed.FeedTypeID); err != nil {
+	var newFeedIncomings []FeedIncoming
+	for _, feedIncoming := range feedIncomings {
+		if feedType, err := repo.ResolveFeedTypeByID(feedIncoming.FeedTypeID); err != nil {
 			return nil, page, limit, 0, err
 		} else {
-			feed.FeedType = *feedType
-			newFeeds = append(newFeeds, feed)
+			feedIncoming.FeedType = *feedType
+			newFeedIncomings = append(newFeedIncomings, feedIncoming)
 		}
 	}
 
 	//get total feed
 	var summary dbmapper.QueryMapper
-	summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM feed")
+	summary = dbmapper.Prepare("SELECT COUNT(*) AS total FROM feed_incoming")
 
 	if err := summary.Error(); err != nil {
 		return nil, page, limit, 0, err
 	}
 
-	var feedsCount int32
+	var feedIncomingsCount int32
 	total := make([]int32, 0)
 	err = Parse(repo.DB.Query(summary.SQL())).Map(dbmapper.Int32("total", &total))
 	if err != nil {
 		//log.Print(err.Error())
 		return nil, page, limit, 0, err
 	} else {
-		feedsCount = total[0]
+		feedIncomingsCount = total[0]
 	}
-	return &newFeeds, page, limit, feedsCount, nil
+	return &newFeedIncomings, page, limit, feedIncomingsCount, nil
 
 }
 
-func (repo *FeedRepository) ResolveFeedByID(id uuid.UUID) (*Feed, error) {
-	query := dbmapper.Prepare(selectFeed + " WHERE id = :id").With(
+func (repo *FeedRepository) ResolveFeedIncomingByID(id uuid.UUID) (*FeedIncoming, error) {
+	query := dbmapper.Prepare(selectFeedIncoming + " WHERE id = :id").With(
 		dbmapper.Param("id", id),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
 	}
-	feeds := make([]Feed, 0)
-	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedsMapper(&feeds))
+	feedIncomings := make([]FeedIncoming, 0)
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedIncomingsMapper(&feedIncomings))
 
 	if err != nil {
 		return nil, err
 	}
-	if len(feeds) < 1 {
-		return nil, fmt.Errorf("feed with id %s not found", id)
+	if len(feedIncomings) < 1 {
+		return nil, fmt.Errorf("feed incoming with id %s not found", id)
 	}
 
-	if feedtype, err := repo.ResolveFeedTypeByID(feeds[0].FeedTypeID); err != nil {
+	if feedtype, err := repo.ResolveFeedTypeByID(feedIncomings[0].FeedTypeID); err != nil {
 		return nil, err
 	} else {
-		feeds[0].FeedType = *feedtype
+		feedIncomings[0].FeedType = *feedtype
 	}
 
-	return &feeds[0], nil
+	return &feedIncomings[0], nil
 }
 
-func (repo *FeedRepository) InsertFeed(feed *Feed) (*Feed, error) {
+func (repo *FeedRepository) InsertFeedIncoming(feedIncoming *FeedIncoming) (*FeedIncoming, error) {
 
 	//prepare query and params
-	insert := dbmapper.Prepare(insertFeed).With(
-		dbmapper.Param("id", feed.ID),
-		dbmapper.Param("feedtype", feed.FeedType.ID),
-		dbmapper.Param("qty", feed.Qty),
-		dbmapper.Param("remarks", feed.Remarks),
-		dbmapper.Param("reference", feed.Reference),
-		dbmapper.Param("origin", feed.Origin),
+	insert := dbmapper.Prepare(insertFeedIncoming).With(
+		dbmapper.Param("id", feedIncoming.ID),
+		dbmapper.Param("feedtype", feedIncoming.FeedType.ID),
+		dbmapper.Param("qty", feedIncoming.Qty),
+		dbmapper.Param("remarks", feedIncoming.Remarks),
 	)
 	//validate query
 	if err := insert.Error(); err != nil {
@@ -359,28 +357,26 @@ func (repo *FeedRepository) InsertFeed(feed *Feed) (*Feed, error) {
 			return nil, err
 		} else {
 			//find inserted data from database based on generated id
-			res, err := repo.ResolveFeedByID(feed.ID)
+			res, err := repo.ResolveFeedIncomingByID(feedIncoming.ID)
 			return res, err
 		}
 	}
 }
 
-func feedMapper(row *Feed) *dbmapper.MappedColumns {
+func feedIncomingMapper(row *FeedIncoming) *dbmapper.MappedColumns {
 	return dbmapper.Columns(
 		dbmapper.Column("id").As(&row.ID),
 		dbmapper.Column("feed_type_id").As(&row.FeedTypeID),
 		dbmapper.Column("qty").As(&row.Qty),
 		dbmapper.Column("remarks").As(&row.Remarks),
-		dbmapper.Column("reference").As(&row.Reference),
-		dbmapper.Column("origin").As(&row.Origin),
 		dbmapper.Column("created").As(&row.Created),
 	)
 }
 
-func feedsMapper(rows *[]Feed) dbmapper.RowMapper {
+func feedIncomingsMapper(rows *[]FeedIncoming) dbmapper.RowMapper {
 	return func() *dbmapper.MappedColumns {
-		row := Feed{}
-		return feedMapper(&row).Then(func() error {
+		row := FeedIncoming{}
+		return feedIncomingMapper(&row).Then(func() error {
 			*rows = append(*rows, row)
 			return nil
 		})
