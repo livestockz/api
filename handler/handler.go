@@ -275,6 +275,112 @@ func (h *BatchHandler) RemoveGrowthPoolByIDs(c *gin.Context) {
 	return
 }
 
+//growth batch cycle
+func (h *BatchHandler) ResolveGrowthBatchCyclePage(c *gin.Context) {
+	//capture something like this: http://localhost:9090/growth/batch-cycle?page=1&limit=10
+	q := c.Request.URL.Query()
+	p := q.Get("page")
+	l := q.Get("limit")
+	id := c.Params.ByName("batchId")
+
+	batchId, err := uuid.FromString(id)
+	if err != nil {
+		utils.Error(c, err)
+		return
+	}
+	page, err := strconv.Atoi(p)
+	if err != nil {
+		page = 0
+	}
+	limit, err := strconv.Atoi(l)
+	if err != nil {
+		limit = 10
+	}
+
+	if batchCycles, p, l, total, err := h.BatchService.ResolveGrowthBatchCyclePage(batchId, int32(page), int32(limit)); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Page(c, batchCycles, p, l, total)
+	}
+	return
+}
+
+func (h *BatchHandler) ResolveGrowthBatchCycleByID(c *gin.Context) {
+	bid := c.Params.ByName("batchId")
+	cid := c.Params.ByName("cycleId")
+	batchId, err := uuid.FromString(bid)
+	if err != nil {
+		utils.Error(c, err)
+		return
+	}
+
+	cycleId, err := uuid.FromString(cid)
+	if err != nil {
+		utils.Error(c, err)
+		return
+	}
+
+	if batchCycle, err := h.BatchService.ResolveGrowthBatchCycleByID(batchId, cycleId); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Ok(c, &batchCycle)
+	}
+	return
+}
+
+func (h *BatchHandler) StoreGrowthBatchCycle(c *gin.Context) {
+
+	var bid = c.Params.ByName("batchId")
+	var cid = c.Params.ByName("cycleId")
+
+	var bc batch.BatchCycle
+	c.BindJSON(&bc)
+	if bid == "" {
+		utils.Error(c, fmt.Errorf("Invalid batch id."))
+	} else if cid == "" {
+		_, err := uuid.FromString(bid)
+		if err != nil {
+			utils.Error(c, err)
+		} else if bc.Weight == 0 || bc.Amount == 0 {
+			utils.Error(c, fmt.Errorf("Incomplete provided data."))
+		} else if result, err := h.BatchService.StoreGrowthBatchCycle(&bc); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Created(c, &result)
+		}
+		return
+	} else {
+		//convert id to UUID
+		//compare uuid to batch cycle
+		//save if valid
+		batchId, err := uuid.FromString(bid)
+		if err != nil {
+			utils.Error(c, err)
+			return
+		}
+
+		cid := c.Params.ByName("cycleId")
+		cycleId, err := uuid.FromString(cid)
+		if err != nil {
+			utils.Error(c, err)
+			return
+		}
+
+		if bc.Batch.ID != batchId {
+			utils.Error(c, fmt.Errorf("Inconsistent ID."))
+		} else if bc.ID != cycleId {
+			utils.Error(c, fmt.Errorf("Inconsistent ID."))
+		} else if bc.Weight == 0 || bc.Amount == 0 {
+			utils.Error(c, fmt.Errorf("Incomplete provided data."))
+		} else if result, err := h.BatchService.StoreGrowthBatchCycle(&bc); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Ok(c, &result)
+		}
+		return
+	}
+}
+
 //feedtype
 func (h *FeedHandler) ResolveFeedTypePage(c *gin.Context) {
 	//capture something like this: http://localhost:9090/feed/feed-type?page=1&limit=10

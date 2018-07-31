@@ -63,6 +63,11 @@ func main() {
 		growth.PUT("/pool/:id", batchHandler.StoreGrowthPool)
 		growth.DELETE("/pool", batchHandler.RemoveGrowthPoolByIDs)
 		growth.DELETE("/pool/:id", batchHandler.RemoveGrowthPoolByID)
+		//batch cycle
+		growth.GET("/batch/:batchId/cycle", batchHandler.ResolveGrowthBatchCyclePage)
+		growth.GET("/batch/:batchId/cycle/:cycleId", batchHandler.ResolveGrowthBatchCycleByID)
+		growth.POST("/batch/:batchId/cycle", batchHandler.StoreGrowthBatchCycle)
+		growth.PUT("/batch/:batchId/cycle/:cycleId", batchHandler.StoreGrowthBatchCycle)
 	}
 	feed := r.Group("/feed")
 	{
@@ -74,9 +79,9 @@ func main() {
 		feed.DELETE("/feed-type", feedHandler.RemoveFeedTypeByIDs)
 		feed.DELETE("/feed-type/:id", feedHandler.RemoveFeedTypeByID)
 		//feeding
-		feed.GET("/transaction", feedHandler.ResolveFeedPage)
-		feed.GET("/transaction/:id", feedHandler.ResolveFeedByID)
-		feed.POST("/transaction", feedHandler.StoreFeed)
+		feed.GET("/incoming", feedHandler.ResolveFeedIncomingPage)
+		feed.GET("/incoming/:id", feedHandler.ResolveFeedIncomingByID)
+		feed.POST("/incoming", feedHandler.StoreFeedIncoming)
 
 		//adjustment
 		feed.GET("/adjustment", feedHandler.ResolveFeedAdjustmentPage)
