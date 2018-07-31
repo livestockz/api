@@ -26,15 +26,13 @@ type FeedType struct {
 	Updated null.Time `json:"updated"`
 }
 
-type Feed struct {
-	ID         uuid.UUID   `json:"id"`
-	FeedType   FeedType    `json:"feed_type"`
-	FeedTypeID uuid.UUID   `json:"-"`
-	Qty        float64     `json:"qty"`
-	Remarks    string      `json:"remarks"`
-	Reference  null.String `json:"reference"`
-	Origin     string      `json:"origin"`
-	Created    time.Time   `json:"created"`
+type FeedIncoming struct {
+	ID         uuid.UUID `json:"id"`
+	FeedType   FeedType  `json:"feed_type"`
+	FeedTypeID uuid.UUID `json:"-"`
+	Qty        float64   `json:"qty"`
+	Remarks    string    `json:"remarks"`
+	Created    time.Time `json:"created"`
 }
 
 type FeedAdjustment struct {
