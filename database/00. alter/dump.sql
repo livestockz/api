@@ -1,0 +1,1 @@
+ALTER TABLE `growth_death` ADD `weight` DECIMAL(10,2) NOT NULL AFTER `death_date`;
