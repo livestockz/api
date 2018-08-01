@@ -82,7 +82,6 @@ func main() {
 		feed.GET("/incoming", feedHandler.ResolveFeedIncomingPage)
 		feed.GET("/incoming/:id", feedHandler.ResolveFeedIncomingByID)
 		feed.POST("/incoming", feedHandler.StoreFeedIncoming)
-
 		//adjustment
 		feed.GET("/adjustment", feedHandler.ResolveFeedAdjustmentPage)
 		feed.GET("/adjustment/:id", feedHandler.ResolveFeedAdjustmentByID)
