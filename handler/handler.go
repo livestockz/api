@@ -378,6 +378,51 @@ func (h *BatchHandler) StoreGrowthBatchCycle(c *gin.Context) {
 	}
 }
 
+//death
+func (h *BatchHandler) StoreGrowthDeath(c *gin.Context) {
+
+	var bid = c.Params.ByName("batchId")
+	var cid = c.Params.ByName("cycleId")
+
+	var d batch.Death
+	c.BindJSON(&d)
+
+	if bid == "" {
+		utils.Error(c, fmt.Errorf("Invalid batch id."))
+	} else if cid == "" {
+		utils.Error(c, fmt.Errorf("Invalid cycle id."))
+	} else {
+		//convert id to UUID
+		//compare uuid to batch cycle
+		//save if valid
+		batchId, err := uuid.FromString(bid)
+		if err != nil {
+			utils.Error(c, err)
+			return
+		}
+
+		cid := c.Params.ByName("cycleId")
+		cycleId, err := uuid.FromString(cid)
+		if err != nil {
+			utils.Error(c, err)
+			return
+		}
+
+		if d.BatchID != batchId {
+			utils.Error(c, fmt.Errorf("Inconsistent Batch ID."))
+		} else if d.BatchCycleID != cycleId {
+			utils.Error(c, fmt.Errorf("Inconsistent Cycle ID."))
+		} else if d.Weight == 0 || d.Amount == 0 {
+			utils.Error(c, fmt.Errorf("Incomplete provided data."))
+		} else if result, err := h.BatchService.StoreGrowthDeath(&d); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Ok(c, &result)
+		}
+		return
+	}
+}
+
 //feedtype
 func (h *FeedHandler) ResolveFeedTypePage(c *gin.Context) {
 	//capture something like this: http://localhost:9090/feed/feed-type?page=1&limit=10
@@ -500,7 +545,7 @@ func (h *FeedHandler) RemoveFeedTypeByIDs(c *gin.Context) {
 
 //feed incoming
 func (h *FeedHandler) ResolveFeedIncomingPage(c *gin.Context) {
-	//capture something like this: http://localhost:9090/feed/feeding?page=1&limit=10
+	//capture something like this: http://localhost:9090/feed/incoming?page=1&limit=10
 	q := c.Request.URL.Query()
 	p := q.Get("page")
 	l := q.Get("limit")
@@ -541,8 +586,6 @@ func (h *FeedHandler) StoreFeedIncoming(c *gin.Context) {
 	c.BindJSON(&f)
 	if f.Qty == 0 {
 		utils.Error(c, fmt.Errorf("Qty must smaller or bigger than 0"))
-	} else if f.Remarks != feed.Feed_Adjustment && f.Remarks != feed.Feed_Incoming && f.Remarks != feed.Feed_Outgoing {
-		utils.Error(c, fmt.Errorf("Unknown feed status"))
 	} else if result, err := h.FeedService.StoreFeedIncoming(&f); err != nil {
 		utils.Error(c, err)
 	} else {

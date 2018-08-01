@@ -45,6 +45,18 @@ type BatchCycle struct {
 	Amount  float64   `json:"amount"`
 	Start   time.Time `json:"start"`
 	Finish  null.Time `json:"finish"`
+	Death   []Death   `json:deaths`
 	Created time.Time `json:"created"`
 	Updated null.Time `json:"updated"`
+}
+
+type Death struct {
+	ID           uuid.UUID `json:"id"`
+	BatchID      uuid.UUID `json:"batch_id"`
+	BatchCycleID uuid.UUID `json:"batch_cycle_id"`
+	DeathDate    time.Time `json:"death_date"`
+	Weight       float64   `json:"weight"`
+	Amount       float64   `json:"amount"`
+	Remarks      string    `json:"remarks"`
+	Created      time.Time `json:"created"`
 }
