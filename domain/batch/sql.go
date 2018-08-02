@@ -525,13 +525,13 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page
 		} else {
 			batchCycle.Pool = *pool
 		}
-		/*
-			deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycle.PoolID)
-			if err != nil {
-				return nil, page, limit, 0, err
-			} else {
-				batchCycle.Death = *deaths
-			}*/
+
+		deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycle.ID)
+		if err != nil {
+			return nil, page, limit, 0, err
+		} else {
+			batchCycle.Deaths = *deaths
+		}
 		newBatchCycles = append(newBatchCycles, batchCycle)
 	}
 
