@@ -66,6 +66,8 @@ func main() {
 		growth.GET("/batch/:batchId/cycle/:cycleId", batchHandler.ResolveGrowthBatchCycleByID)
 		growth.POST("/batch/:batchId/cycle", batchHandler.StoreGrowthBatchCycle)
 		growth.PUT("/batch/:batchId/cycle/:cycleId", batchHandler.StoreGrowthBatchCycle)
+		//batch cycle death
+		growth.POST("/batch/:batchId/cycle/:cycleId/death", batchHandler.StoreGrowthDeath)
 	}
 	feed := r.Group("/feed")
 	{
@@ -76,11 +78,10 @@ func main() {
 		feed.PUT("/feed-type/:id", feedHandler.StoreFeedType)
 		feed.DELETE("/feed-type", feedHandler.RemoveFeedTypeByIDs)
 		feed.DELETE("/feed-type/:id", feedHandler.RemoveFeedTypeByID)
-		//feeding
-		feed.GET("/transaction", feedHandler.ResolveFeedPage)
-		feed.GET("/transaction/:id", feedHandler.ResolveFeedByID)
-		feed.POST("/transaction", feedHandler.StoreFeed)
-
+		//feed incoming
+		feed.GET("/incoming", feedHandler.ResolveFeedIncomingPage)
+		feed.GET("/incoming/:id", feedHandler.ResolveFeedIncomingByID)
+		feed.POST("/incoming", feedHandler.StoreFeedIncoming)
 		//adjustment
 		feed.GET("/adjustment", feedHandler.ResolveFeedAdjustmentPage)
 		feed.GET("/adjustment/:id", feedHandler.ResolveFeedAdjustmentByID)

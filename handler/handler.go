@@ -378,6 +378,34 @@ func (h *BatchHandler) StoreGrowthBatchCycle(c *gin.Context) {
 	}
 }
 
+//growth batch cycle death
+func (h *BatchHandler) StoreGrowthDeath(c *gin.Context) {
+	var bid = c.Params.ByName("batchId")
+	var cid = c.Params.ByName("cycleId")
+
+	var bcd batch.Death
+	c.BindJSON(&bcd)
+
+	if bid == "" {
+		utils.Error(c, fmt.Errorf("Invalid batch id."))
+	} else if cid == "" {
+		utils.Error(c, fmt.Errorf("Invalid cycle id."))
+	} else if bcd.Amount == 0 || bcd.Weight == 0 {
+		utils.Error(c, fmt.Errorf("Incomplete data."))
+	} else if _, err := uuid.FromString(bid); err != nil {
+		utils.Error(c, err)
+	} else if cycleId, err := uuid.FromString(cid); err != nil {
+		utils.Error(c, err)
+	} else if bcd.BatchCycleID != cycleId {
+		utils.Error(c, fmt.Errorf("Inconsistent cycle id."))
+	} else if result, err := h.BatchService.StoreGrowthDeath(&bcd); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Ok(c, &result)
+	}
+	return
+}
+
 //feedtype
 func (h *FeedHandler) ResolveFeedTypePage(c *gin.Context) {
 	//capture something like this: http://localhost:9090/feed/feed-type?page=1&limit=10
@@ -498,9 +526,9 @@ func (h *FeedHandler) RemoveFeedTypeByIDs(c *gin.Context) {
 	return
 }
 
-//feed
-func (h *FeedHandler) ResolveFeedPage(c *gin.Context) {
-	//capture something like this: http://localhost:9090/feed/feeding?page=1&limit=10
+//feed incoming
+func (h *FeedHandler) ResolveFeedIncomingPage(c *gin.Context) {
+	//capture something like this: http://localhost:9090/feed/incoming?page=1&limit=10
 	q := c.Request.URL.Query()
 	p := q.Get("page")
 	l := q.Get("limit")
@@ -513,7 +541,7 @@ func (h *FeedHandler) ResolveFeedPage(c *gin.Context) {
 		limit = 10
 	}
 
-	if feeds, p, l, total, err := h.FeedService.ResolveFeedPage(int32(page), int32(limit)); err != nil {
+	if feeds, p, l, total, err := h.FeedService.ResolveFeedIncomingPage(int32(page), int32(limit)); err != nil {
 		utils.Error(c, err)
 	} else {
 		utils.Page(c, feeds, p, l, total)
@@ -521,13 +549,13 @@ func (h *FeedHandler) ResolveFeedPage(c *gin.Context) {
 	return
 }
 
-func (h *FeedHandler) ResolveFeedByID(c *gin.Context) {
+func (h *FeedHandler) ResolveFeedIncomingByID(c *gin.Context) {
 	id := c.Params.ByName("id")
 	uid, err := uuid.FromString(id)
 
 	if err != nil {
 		utils.Error(c, err)
-	} else if feed, err := h.FeedService.ResolveFeedByID(uid); err != nil {
+	} else if feed, err := h.FeedService.ResolveFeedIncomingByID(uid); err != nil {
 		utils.Error(c, err)
 	} else {
 		utils.Ok(c, &feed)
@@ -535,15 +563,13 @@ func (h *FeedHandler) ResolveFeedByID(c *gin.Context) {
 	return
 }
 
-func (h *FeedHandler) StoreFeed(c *gin.Context) {
+func (h *FeedHandler) StoreFeedIncoming(c *gin.Context) {
 
-	var f feed.Feed
+	var f feed.FeedIncoming
 	c.BindJSON(&f)
 	if f.Qty == 0 {
 		utils.Error(c, fmt.Errorf("Qty must smaller or bigger than 0"))
-	} else if f.Remarks != feed.Feed_Adjustment && f.Remarks != feed.Feed_Incoming && f.Remarks != feed.Feed_Outgoing {
-		utils.Error(c, fmt.Errorf("Unknown feed status"))
-	} else if result, err := h.FeedService.StoreFeed(&f); err != nil {
+	} else if result, err := h.FeedService.StoreFeedIncoming(&f); err != nil {
 		utils.Error(c, err)
 	} else {
 		utils.Created(c, &result)
