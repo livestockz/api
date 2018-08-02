@@ -24,7 +24,7 @@ type Service interface {
 	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
 	StoreGrowthBatchCycle(*BatchCycle) (*BatchCycle, error)
 	//death
-	StoreGrowthDeath(*Death) (*[]BatchCycle, error)
+	StoreGrowthDeath(*Death) (*Death, error)
 }
 
 type BatchService struct {
@@ -166,13 +166,11 @@ func (svc *BatchService) StoreGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCy
 	}
 }
 
-//death
-func (svc *BatchService) StoreGrowthDeath(death *Death) (*BatchCycle, error) {
+func (svc *BatchService) StoreGrowthDeath(death *Death) (*Death, error) {
 	death.ID = uuid.Must(uuid.NewV4())
 	if result, err := svc.BatchRepository.InsertGrowthDeath(death); err != nil {
 		return nil, err
 	} else {
 		return result, nil
 	}
-
 }

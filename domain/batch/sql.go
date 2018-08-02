@@ -29,9 +29,9 @@ type Repository interface {
 	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
 	InsertGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCycle, error)
 	UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) (*BatchCycle, error)
-	//death
-	ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID) (*[]Death, error)
-	InsertGrowthDeath(death *Death) (*BatchCycle, error)
+	//batch cycle death
+	ResolveGrowthDeathByID(deathId uuid.UUID) (*Death, error)
+	InsertGrowthDeath(death *Death) (*Death, error)
 }
 
 const (
@@ -50,7 +50,7 @@ const (
 	insertGrowthBatchCycle = `INSERT INTO growth_batch_cycle(id, growth_batch_id, growth_pool_id, cycle_start, weight, amount, created) VALUES (:id ,:batch, :pool, :start, :weight, :amount, NOW())`
 	updateGrowthBatchCycle = `UPDATE growth_batch_cycle SET growth_batch_id = :batch, growth_pool_id = :pool, cycle_start = :start, cycle_finish = :finish, weight = :weight, amount = :amount, updated = NOW() WHERE id = :id`
 	//death
-	selectGrowthDeath = `SELECT id, death_date, weight, amount, remarks, created) FROM growth_death`
+	selectGrowthDeath = `SELECT id, death_date, weight, amount, remarks, created FROM growth_death`
 	insertGrowthDeath = `INSERT INTO growth_death(id, growth_batch_cycle_id, death_date, weight, amount, remarks, created) VALUES (:id ,:cycleId, :death_date, :weight, :amount, :remarks, NOW())`
 )
 
@@ -525,12 +525,13 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page
 		} else {
 			batchCycle.Pool = *pool
 		}
-		deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycle.PoolID)
-		if err != nil {
-			return nil, page, limit, 0, err
-		} else {
-			batchCycle.Death = *deaths
-		}
+		/*
+			deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycle.PoolID)
+			if err != nil {
+				return nil, page, limit, 0, err
+			} else {
+				batchCycle.Death = *deaths
+			}*/
 		newBatchCycles = append(newBatchCycles, batchCycle)
 	}
 
@@ -586,11 +587,12 @@ func (repo *BatchRepository) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycl
 		} else {
 			batchCycles[0].Pool = *pool
 		}
-		if deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycles[0].PoolID); err != nil {
-			return nil, err
-		} else {
-			batchCycles[0].Death = *deaths
-		}
+		/*
+			if deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycles[0].PoolID); err != nil {
+				return nil, err
+			} else {
+				batchCycles[0].Death = *deaths
+			}*/
 
 		return &batchCycles[0], nil
 	}
@@ -680,10 +682,9 @@ func batchCyclesMapper(rows *[]BatchCycle) dbmapper.RowMapper {
 	}
 }
 
-//death
-func (repo *BatchRepository) ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID) (*[]Death, error) {
-	query := dbmapper.Prepare(selectGrowthDeath + " WHERE growth_batch_cycle_id = :cycleId").With(
-		dbmapper.Param("cycleId", cycleId),
+func (repo *BatchRepository) ResolveGrowthDeathByID(deathId uuid.UUID) (*Death, error) {
+	query := dbmapper.Prepare(selectGrowthDeath + " WHERE id = :deathId").With(
+		dbmapper.Param("deathId", deathId),
 	)
 	if err := query.Error(); err != nil {
 		return nil, err
@@ -694,14 +695,14 @@ func (repo *BatchRepository) ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID)
 	if err != nil {
 		return nil, err
 	}
-	return &deaths, nil
+	return &deaths[0], nil
 }
 
-func (repo *BatchRepository) InsertGrowthDeath(death *Death) (*BatchCycle, error) {
+func (repo *BatchRepository) InsertGrowthDeath(death *Death) (*Death, error) {
 	//prepare query and params
 	insert := dbmapper.Prepare(insertGrowthDeath).With(
 		dbmapper.Param("id", death.ID),
-		dbmapper.Param("cycleId", death.BatchCycleID),
+		dbmapper.Param("cycleId", death.BatchCycle.ID),
 		dbmapper.Param("death_date", death.DeathDate),
 		dbmapper.Param("weight", death.Weight),
 		dbmapper.Param("amount", death.Amount),
@@ -710,26 +711,30 @@ func (repo *BatchRepository) InsertGrowthDeath(death *Death) (*BatchCycle, error
 	//validate query
 	if err := insert.Error(); err != nil {
 		return nil, err
+	} else if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
+		return nil, err
+	} else if result, err := repo.ResolveGrowthDeathByID(death.ID); err != nil {
+		return nil, err
+	} else if batchCycle, err := repo.ResolveGrowthBatchCycleByID(death.BatchCycle.Batch.ID, death.BatchCycle.ID); err != nil {
+		return nil, err
 	} else {
-		//insert to database
-		if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
-			return nil, err
-		} else {
-			//find inserted data from database based on generated id
-			res, err := repo.ResolveGrowthBatchCycleByID(death.BatchID, death.BatchCycleID)
-			return res, err
-		}
+		var growthDeath []Death
+		growthDeath = append(growthDeath, *result)
+		growthDeath[0].BatchCycle = *batchCycle
+		return &growthDeath[0], nil
 	}
 }
 
 func deathMapper(row *Death) *dbmapper.MappedColumns {
 	return dbmapper.Columns(
 		dbmapper.Column("id").As(&row.ID),
+		dbmapper.Column("growth_batch_cycle_id").As(&row.BatchCycle.ID),
+		dbmapper.Column("growth_batch_id").As(&row.BatchCycle.Batch.ID),
 		dbmapper.Column("death_date").As(&row.DeathDate),
 		dbmapper.Column("weight").As(&row.Weight),
 		dbmapper.Column("amount").As(&row.Amount),
-		dbmapper.Column("remarks").As(&row.Remarks),
 		dbmapper.Column("created").As(&row.Created),
+		dbmapper.Column("remarks").As(&row.Remarks),
 	)
 }
 
