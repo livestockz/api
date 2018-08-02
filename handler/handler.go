@@ -392,13 +392,11 @@ func (h *BatchHandler) StoreGrowthDeath(c *gin.Context) {
 		utils.Error(c, fmt.Errorf("Invalid cycle id."))
 	} else if bcd.Amount == 0 || bcd.Weight == 0 {
 		utils.Error(c, fmt.Errorf("Incomplete data."))
-	} else if batchId, err := uuid.FromString(bid); err != nil {
+	} else if _, err := uuid.FromString(bid); err != nil {
 		utils.Error(c, err)
 	} else if cycleId, err := uuid.FromString(cid); err != nil {
 		utils.Error(c, err)
-	} else if bcd.BatchCycle.Batch.ID != batchId {
-		utils.Error(c, fmt.Errorf("Inconsistent batch id."))
-	} else if bcd.BatchCycle.ID != cycleId {
+	} else if bcd.BatchCycleID != cycleId {
 		utils.Error(c, fmt.Errorf("Inconsistent cycle id."))
 	} else if result, err := h.BatchService.StoreGrowthDeath(&bcd); err != nil {
 		utils.Error(c, err)
