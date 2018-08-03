@@ -3,6 +3,7 @@ package batch
 import (
 	"fmt"
 
+	"github.com/livestockz/api/domain/feed"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -25,10 +26,13 @@ type Service interface {
 	StoreGrowthBatchCycle(*BatchCycle) (*BatchCycle, error)
 	//death
 	StoreGrowthDeath(*Death) (*Death, error)
+	//death
+	StoreGrowthFeeding(*Feeding) (*Feeding, error)
 }
 
 type BatchService struct {
-	BatchRepository Repository `inject:"batchRepository"`
+	BatchRepository Repository   `inject:"batchRepository"`
+	FeedService     feed.Service `inject:"feedService"`
 }
 
 func (svc *BatchService) ResolveGrowthBatchPage(page int32, limit int32, deleted string) (*[]Batch, int32, int32, int32, error) {
@@ -132,11 +136,26 @@ func (svc *BatchService) RemoveGrowthPoolByIDs(ids []uuid.UUID) (*[]Pool, error)
 	}
 }
 
+//batch cycle
 func (svc *BatchService) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int32, limit int32) (*[]BatchCycle, int32, int32, int32, error) {
 	if batchCycles, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchCyclePage(batchId, page, limit); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
-		return batchCycles, page, limit, total, nil
+		var newBatchCycles []BatchCycle
+		for _, batchCycle := range *batchCycles {
+			var newFeeding []Feeding
+			for _, feeding := range batchCycle.Feeding {
+				if feedtype, err := svc.FeedService.ResolveFeedTypeByID(feeding.FeedTypeID); err != nil {
+					return nil, 0, 0, 0, err
+				} else {
+					feeding.FeedType = *feedtype
+					newFeeding = append(newFeeding, feeding)
+				}
+			}
+			batchCycle.Feeding = newFeeding
+			newBatchCycles = append(newBatchCycles, batchCycle)
+		}
+		return &newBatchCycles, page, limit, total, nil
 	}
 }
 
@@ -144,6 +163,16 @@ func (svc *BatchService) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId 
 	if batchCycle, err := svc.BatchRepository.ResolveGrowthBatchCycleByID(batchId, cycleId); err != nil {
 		return nil, fmt.Errorf("found an error: %s", err.Error())
 	} else {
+		var newFeeding []Feeding
+		for _, feeding := range batchCycle.Feeding {
+			if feedtype, err := svc.FeedService.ResolveFeedTypeByID(feeding.FeedTypeID); err != nil {
+				return nil, err
+			} else {
+				feeding.FeedType = *feedtype
+				newFeeding = append(newFeeding, feeding)
+			}
+		}
+		batchCycle.Feeding = newFeeding
 		return batchCycle, nil
 	}
 }
@@ -166,11 +195,25 @@ func (svc *BatchService) StoreGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCy
 	}
 }
 
+//growth death
 func (svc *BatchService) StoreGrowthDeath(death *Death) (*Death, error) {
 	death.ID = uuid.Must(uuid.NewV4())
 	if result, err := svc.BatchRepository.InsertGrowthDeath(death); err != nil {
 		return nil, err
 	} else {
+		return result, nil
+	}
+}
+
+//growth feeding
+func (svc *BatchService) StoreGrowthFeeding(feeding *Feeding) (*Feeding, error) {
+	feeding.ID = uuid.Must(uuid.NewV4())
+	if result, err := svc.BatchRepository.InsertGrowthFeeding(feeding); err != nil {
+		return nil, err
+	} else if feedtype, err := svc.FeedService.ResolveFeedTypeByID(result.FeedTypeID); err != nil {
+		return nil, err
+	} else {
+		result.FeedType = *feedtype
 		return result, nil
 	}
 }
