@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/guregu/null"
+	"github.com/livestockz/api/domain/feed"
 	"github.com/satori/go.uuid"
 )
 
@@ -43,6 +44,7 @@ type BatchCycle struct {
 	PoolID  uuid.UUID `json:"-"`
 	Weight  float64   `json:"weight"`
 	Amount  float64   `json:"amount"`
+	Feeding []Feeding `json:"feeding"`
 	Deaths  []Death   `json:"deaths"`
 	Start   time.Time `json:"start"`
 	Finish  null.Time `json:"finish"`
@@ -58,4 +60,15 @@ type Death struct {
 	Amount       float64   `json:"amount"`
 	Remarks      string    `json:"remarks"`
 	Created      time.Time `json:"created"`
+}
+
+type Feeding struct {
+	ID           uuid.UUID     `json:"id"`
+	BatchCycleID uuid.UUID     `json:"batch_cycle_id"`
+	FeedType     feed.FeedType `json:"feed_type"`
+	FeedTypeID   uuid.UUID     `json:"-"`
+	FeedingDate  time.Time     `json:"feeding_date"`
+	Qty          float64       `json:"qty"`
+	Remarks      string        `json:"remarks"`
+	Created      time.Time     `json:"created"`
 }

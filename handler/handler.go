@@ -406,6 +406,34 @@ func (h *BatchHandler) StoreGrowthDeath(c *gin.Context) {
 	return
 }
 
+//growth batch cycle feeding
+func (h *BatchHandler) StoreGrowthFeeding(c *gin.Context) {
+	var bid = c.Params.ByName("batchId")
+	var cid = c.Params.ByName("cycleId")
+
+	var feeding batch.Feeding
+	c.BindJSON(&feeding)
+
+	if bid == "" {
+		utils.Error(c, fmt.Errorf("Invalid batch id."))
+	} else if cid == "" {
+		utils.Error(c, fmt.Errorf("Invalid cycle id."))
+	} else if feeding.Qty == 0 {
+		utils.Error(c, fmt.Errorf("Incomplete data."))
+	} else if _, err := uuid.FromString(bid); err != nil {
+		utils.Error(c, err)
+	} else if cycleId, err := uuid.FromString(cid); err != nil {
+		utils.Error(c, err)
+	} else if feeding.BatchCycleID != cycleId {
+		utils.Error(c, fmt.Errorf("Inconsistent cycle id."))
+	} else if result, err := h.BatchService.StoreGrowthFeeding(&feeding); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Ok(c, &result)
+	}
+	return
+}
+
 //feedtype
 func (h *FeedHandler) ResolveFeedTypePage(c *gin.Context) {
 	//capture something like this: http://localhost:9090/feed/feed-type?page=1&limit=10

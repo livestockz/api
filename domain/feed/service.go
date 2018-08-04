@@ -8,6 +8,7 @@ import (
 
 type Service interface {
 	ResolveFeedTypePage(page int32, limit int32, deleted string) (*[]FeedType, int32, int32, int32, error)
+	ResolveFeedTypeByIDs([]uuid.UUID) (*[]FeedType, error)
 	ResolveFeedTypeByID(uuid.UUID) (*FeedType, error)
 	StoreFeedType(*FeedType) (*FeedType, error)
 	RemoveFeedTypeByID(uuid.UUID) (*FeedType, error)
@@ -32,6 +33,14 @@ func (svc *FeedService) ResolveFeedTypePage(page int32, limit int32, deleted str
 		return nil, 0, 0, 0, err
 	} else {
 		return feedtypes, page, limit, total, nil
+	}
+}
+
+func (svc *FeedService) ResolveFeedTypeByIDs(ids []uuid.UUID) (*[]FeedType, error) {
+	if feedtypes, err := svc.FeedRepository.ResolveFeedTypeByIDs(ids); err != nil {
+		return nil, fmt.Errorf("found an error: %s", err.Error())
+	} else {
+		return feedtypes, nil
 	}
 }
 

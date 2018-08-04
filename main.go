@@ -27,7 +27,8 @@ func main() {
 	//register Handler
 	batchHandler := new(handler.BatchHandler)
 	feedHandler := new(handler.FeedHandler)
-	//BatchService := new(batch.BatchService)
+	batchService := new(batch.BatchService)
+	feedService := new(feed.FeedService)
 
 	//register service
 	r := gin.Default()
@@ -36,8 +37,8 @@ func main() {
 	sc.RegisterService("config", cfg)
 	sc.RegisterService("batchHandler", batchHandler)
 	sc.RegisterService("feedHandler", feedHandler)
-	sc.RegisterService("batchService", new(batch.BatchService))
-	sc.RegisterService("feedService", new(feed.FeedService))
+	sc.RegisterService("batchService", batchService)
+	sc.RegisterService("feedService", feedService)
 	sc.RegisterService("batchRepository", new(batch.BatchRepository))
 	sc.RegisterService("feedRepository", new(feed.FeedRepository))
 	sc.HandleGracefulShutdown(3 * time.Second)
@@ -68,6 +69,8 @@ func main() {
 		growth.PUT("/batch/:batchId/cycle/:cycleId", batchHandler.StoreGrowthBatchCycle)
 		//batch cycle death
 		growth.POST("/batch/:batchId/cycle/:cycleId/death", batchHandler.StoreGrowthDeath)
+		//batch cycle feeding
+		growth.POST("/batch/:batchId/cycle/:cycleId/feeding", batchHandler.StoreGrowthFeeding)
 	}
 	feed := r.Group("/feed")
 	{

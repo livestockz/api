@@ -30,8 +30,13 @@ type Repository interface {
 	InsertGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCycle, error)
 	UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) (*BatchCycle, error)
 	//batch cycle death
+	ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID) (*[]Death, error)
 	ResolveGrowthDeathByID(deathId uuid.UUID) (*Death, error)
 	InsertGrowthDeath(death *Death) (*Death, error)
+	//batch cycle feeding
+	ResolveGrowthFeedingByBatchCycleID(cycleId uuid.UUID) (*[]Feeding, error)
+	ResolveGrowthFeedingByID(feedingId uuid.UUID) (*Feeding, error)
+	InsertGrowthFeeding(feeding *Feeding) (*Feeding, error)
 }
 
 const (
@@ -52,6 +57,9 @@ const (
 	//death
 	selectGrowthDeath = `SELECT id, growth_batch_cycle_id, death_date, weight, amount, remarks, created FROM growth_death`
 	insertGrowthDeath = `INSERT INTO growth_death(id, growth_batch_cycle_id, death_date, weight, amount, remarks, created) VALUES (:id ,:cycleId, :death_date, :weight, :amount, :remarks, NOW())`
+	//feeding
+	selectGrowthFeeding = `SELECT id, growth_batch_cycle_id, feed_type_id, feeding_date, qty, remarks, created FROM growth_feeding`
+	insertGrowthFeeding = `INSERT INTO growth_feeding(id, growth_batch_cycle_id, feed_type_id, feeding_date, qty, remarks, created) VALUES (:id ,:cycleId, :feedTypeId,:feeding_date, :qty, :remarks, NOW())`
 )
 
 type BatchRepository struct {
@@ -526,6 +534,13 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page
 			batchCycle.Pool = *pool
 		}
 
+		feedings, err := repo.ResolveGrowthFeedingByBatchCycleID(batchCycle.ID)
+		if err != nil {
+			return nil, page, limit, 0, err
+		} else {
+			batchCycle.Feeding = *feedings
+		}
+
 		deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycle.ID)
 		if err != nil {
 			return nil, page, limit, 0, err
@@ -586,6 +601,12 @@ func (repo *BatchRepository) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycl
 			return nil, err
 		} else {
 			batchCycles[0].Pool = *pool
+		}
+
+		if feedings, err := repo.ResolveGrowthFeedingByBatchCycleID(batchCycles[0].ID); err != nil {
+			return nil, err
+		} else {
+			batchCycles[0].Feeding = *feedings
 		}
 
 		if deaths, err := repo.ResolveGrowthDeathByBatchCycleID(batchCycles[0].ID); err != nil {
@@ -682,6 +703,7 @@ func batchCyclesMapper(rows *[]BatchCycle) dbmapper.RowMapper {
 	}
 }
 
+//growth death
 func (repo *BatchRepository) ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID) (*[]Death, error) {
 	query := dbmapper.Prepare(selectGrowthDeath + " WHERE growth_batch_cycle_id = :cycleId ORDER BY created ASC").With(
 		dbmapper.Param("cycleId", cycleId),
@@ -752,6 +774,84 @@ func deathsMapper(rows *[]Death) dbmapper.RowMapper {
 	return func() *dbmapper.MappedColumns {
 		row := Death{}
 		return deathMapper(&row).Then(func() error {
+			*rows = append(*rows, row)
+			return nil
+		})
+	}
+}
+
+//feeding
+func (repo *BatchRepository) ResolveGrowthFeedingByBatchCycleID(cycleId uuid.UUID) (*[]Feeding, error) {
+	query := dbmapper.Prepare(selectGrowthFeeding + " WHERE growth_batch_cycle_id = :cycleId ORDER BY created ASC").With(
+		dbmapper.Param("cycleId", cycleId),
+	)
+	if err := query.Error(); err != nil {
+		return nil, err
+	}
+	feedings := make([]Feeding, 0)
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedingsMapper(&feedings))
+
+	if err != nil {
+		return nil, err
+	}
+	return &feedings, nil
+}
+
+func (repo *BatchRepository) ResolveGrowthFeedingByID(FeedingId uuid.UUID) (*Feeding, error) {
+	query := dbmapper.Prepare(selectGrowthFeeding + " WHERE id = :FeedingId").With(
+		dbmapper.Param("FeedingId", FeedingId),
+	)
+	if err := query.Error(); err != nil {
+		return nil, err
+	}
+	feedings := make([]Feeding, 0)
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(feedingsMapper(&feedings))
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &feedings[0], nil
+	}
+}
+
+func (repo *BatchRepository) InsertGrowthFeeding(feeding *Feeding) (*Feeding, error) {
+	//prepare query and params
+	insert := dbmapper.Prepare(insertGrowthFeeding).With(
+		dbmapper.Param("id", feeding.ID),
+		dbmapper.Param("cycleId", feeding.BatchCycleID),
+		dbmapper.Param("feedTypeId", feeding.FeedType.ID),
+		dbmapper.Param("feeding_date", feeding.FeedingDate),
+		dbmapper.Param("qty", feeding.Qty),
+		dbmapper.Param("remarks", feeding.Remarks),
+	)
+	//validate query
+	if err := insert.Error(); err != nil {
+		return nil, err
+	} else if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
+		return nil, err
+	} else if result, err := repo.ResolveGrowthFeedingByID(feeding.ID); err != nil {
+		return nil, err
+	} else {
+		return result, nil
+	}
+}
+
+func feedingMapper(row *Feeding) *dbmapper.MappedColumns {
+	return dbmapper.Columns(
+		dbmapper.Column("id").As(&row.ID),
+		dbmapper.Column("growth_batch_cycle_id").As(&row.BatchCycleID),
+		dbmapper.Column("feed_type_id").As(&row.FeedTypeID),
+		dbmapper.Column("feeding_date").As(&row.FeedingDate),
+		dbmapper.Column("qty").As(&row.Qty),
+		dbmapper.Column("remarks").As(&row.Remarks),
+		dbmapper.Column("created").As(&row.Created),
+	)
+}
+
+func feedingsMapper(rows *[]Feeding) dbmapper.RowMapper {
+	return func() *dbmapper.MappedColumns {
+		row := Feeding{}
+		return feedingMapper(&row).Then(func() error {
 			*rows = append(*rows, row)
 			return nil
 		})
