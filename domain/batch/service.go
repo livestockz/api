@@ -141,15 +141,29 @@ func (svc *BatchService) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page int
 	if batchCycles, page, limit, total, err := svc.BatchRepository.ResolveGrowthBatchCyclePage(batchId, page, limit); err != nil {
 		return nil, 0, 0, 0, err
 	} else {
+		//prepare ids of feed type id
+		var ids []uuid.UUID
+		for _, batchCycle := range *batchCycles {
+			for _, feeding := range batchCycle.Feeding {
+				ids = append(ids, feeding.FeedTypeID)
+			}
+		}
+		//find feed type ids
+		feedTypes, err := svc.FeedService.ResolveFeedTypeByIDs(ids)
+		if err != nil {
+			return nil, 0, 0, 0, err
+		}
+
+		//map feed type to batchcycle feeding's feed type
 		var newBatchCycles []BatchCycle
 		for _, batchCycle := range *batchCycles {
 			var newFeeding []Feeding
 			for _, feeding := range batchCycle.Feeding {
-				if feedtype, err := svc.FeedService.ResolveFeedTypeByID(feeding.FeedTypeID); err != nil {
-					return nil, 0, 0, 0, err
-				} else {
-					feeding.FeedType = *feedtype
-					newFeeding = append(newFeeding, feeding)
+				for _, feedType := range *feedTypes {
+					if feeding.FeedTypeID.String() == feedType.ID.String() {
+						feeding.FeedType = feedType
+						newFeeding = append(newFeeding, feeding)
+					}
 				}
 			}
 			batchCycle.Feeding = newFeeding
@@ -163,13 +177,25 @@ func (svc *BatchService) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId 
 	if batchCycle, err := svc.BatchRepository.ResolveGrowthBatchCycleByID(batchId, cycleId); err != nil {
 		return nil, fmt.Errorf("found an error: %s", err.Error())
 	} else {
+
+		//populate feed type id
+		var ids []uuid.UUID
+		for _, feeding := range batchCycle.Feeding {
+			ids = append(ids, feeding.FeedTypeID)
+		}
+		//find feed type ids
+		feedTypes, err := svc.FeedService.ResolveFeedTypeByIDs(ids)
+		if err != nil {
+			return nil, err
+		}
+		//replace feed type in feeding on batchCycle
 		var newFeeding []Feeding
 		for _, feeding := range batchCycle.Feeding {
-			if feedtype, err := svc.FeedService.ResolveFeedTypeByID(feeding.FeedTypeID); err != nil {
-				return nil, err
-			} else {
-				feeding.FeedType = *feedtype
-				newFeeding = append(newFeeding, feeding)
+			for _, feedType := range *feedTypes {
+				if feeding.FeedTypeID.String() == feedType.ID.String() {
+					feeding.FeedType = feedType
+					newFeeding = append(newFeeding, feeding)
+				}
 			}
 		}
 		batchCycle.Feeding = newFeeding
