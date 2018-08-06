@@ -72,3 +72,16 @@ type Feeding struct {
 	Remarks      string        `json:"remarks"`
 	Created      time.Time     `json:"created"`
 }
+
+type CutOff struct {
+	ID           uuid.UUID `json:"id"`
+	BatchID      uuid.UUID `json:"batch_id"`
+	BatchCycleID uuid.UUID `json:"batch_cycle_id"`
+	SummaryDate  time.Time `json:"summary_date"`
+	Weight       float64   `json:"weight"`
+	Amount       float64   `json:"amount"`
+	ADG          float64   `json:"adg"`
+	FCR          float64   `json:"fcr"`
+	SR           float64   `json:"sr"`
+	Created      time.Time `json:"created"`
+}

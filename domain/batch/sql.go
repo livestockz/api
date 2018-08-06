@@ -37,6 +37,9 @@ type Repository interface {
 	ResolveGrowthFeedingByBatchCycleID(cycleId uuid.UUID) (*[]Feeding, error)
 	ResolveGrowthFeedingByID(feedingId uuid.UUID) (*Feeding, error)
 	InsertGrowthFeeding(feeding *Feeding) (*Feeding, error)
+	//batch cycle summary
+	ResolveGrowthFeedingByCycleID(cycleId uuid.UUID) (*CutOff, error)
+	InsertGrowthSummary(cutoff *CutOff) (*CutOff, error)
 }
 
 const (
@@ -60,6 +63,9 @@ const (
 	//feeding
 	selectGrowthFeeding = `SELECT id, growth_batch_cycle_id, feed_type_id, feeding_date, qty, remarks, created FROM growth_feeding`
 	insertGrowthFeeding = `INSERT INTO growth_feeding(id, growth_batch_cycle_id, feed_type_id, feeding_date, qty, remarks, created) VALUES (:id ,:cycleId, :feedTypeId,:feeding_date, :qty, :remarks, NOW())`
+	//summary
+	selectGrowthSummary = `SELECT id, growth_batch_cycle_id, summary_date, weight, amount, adg, fcr, sr, created FROM growth_summary`
+	insertGrowthSummary = `INSERT INTO growth_summary(id, growth_batch_cycle_id, summary_date, weight, amount, adg, fcr, sr, created) VALUES (:id ,:cycleId, :summary_date,:weight, :amount, :adg, :fcr, :sr, NOW())`
 )
 
 type BatchRepository struct {
@@ -852,6 +858,72 @@ func feedingsMapper(rows *[]Feeding) dbmapper.RowMapper {
 	return func() *dbmapper.MappedColumns {
 		row := Feeding{}
 		return feedingMapper(&row).Then(func() error {
+			*rows = append(*rows, row)
+			return nil
+		})
+	}
+}
+
+//growth summary
+func (repo *BatchRepository) ResolveGrowthSummaryByCycleID(cycleId uuid.UUID) (*CutOff, error) {
+	query := dbmapper.Prepare(selectGrowthSummary + " WHERE growth_batch_cycle_id = :cycleId").With(
+		dbmapper.Param("cycleId", cycleId),
+	)
+	if err := query.Error(); err != nil {
+		return nil, err
+	}
+	cutoffs := make([]CutOff, 0)
+	err := Parse(repo.DB.Query(query.SQL(), query.Params()...)).Map(cutoffsMapper(&cutoffs))
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &cutoffs[0], nil
+	}
+}
+
+func (repo *BatchRepository) InsertGrowthSummary(cutoff *CutOff) (*CutOff, error) {
+	//prepare query and params
+	insert := dbmapper.Prepare(insertGrowthSummary).With(
+		dbmapper.Param("id", cutoff.ID),
+		dbmapper.Param("cycleId", cutoff.BatchCycleID),
+		dbmapper.Param("summary_date", cutoff.SummaryDate),
+		dbmapper.Param("weight", cutoff.Weight),
+		dbmapper.Param("amount", cutoff.Amount),
+		dbmapper.Param("adg", cutoff.ADG),
+		dbmapper.Param("fcr", cutoff.FCR),
+		dbmapper.Param("sr", cutoff.SR),
+	)
+	//validate query
+	if err := insert.Error(); err != nil {
+		return nil, err
+	} else if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
+		return nil, err
+	} else if result, err := repo.ResolveGrowthSummaryByCycleID(cutoff.BatchCycleID); err != nil {
+		return nil, err
+	} else {
+		return result, nil
+	}
+}
+
+func cutoffMapper(row *CutOff) *dbmapper.MappedColumns {
+	return dbmapper.Columns(
+		dbmapper.Column("id").As(&row.ID),
+		dbmapper.Column("growth_batch_cycle_id").As(&row.BatchCycleID),
+		dbmapper.Column("summary_date").As(&row.SummaryDate),
+		dbmapper.Column("weight").As(&row.Weight),
+		dbmapper.Column("amount").As(&row.Amount),
+		dbmapper.Column("adg").As(&row.ADG),
+		dbmapper.Column("fcr").As(&row.FCR),
+		dbmapper.Column("sr").As(&row.SR),
+		dbmapper.Column("created").As(&row.Created),
+	)
+}
+
+func cutoffsMapper(rows *[]CutOff) dbmapper.RowMapper {
+	return func() *dbmapper.MappedColumns {
+		row := CutOff{}
+		return cutoffMapper(&row).Then(func() error {
 			*rows = append(*rows, row)
 			return nil
 		})
