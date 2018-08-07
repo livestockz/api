@@ -44,10 +44,11 @@ type BatchCycle struct {
 	PoolID  uuid.UUID `json:"-"`
 	Weight  float64   `json:"weight"`
 	Amount  float64   `json:"amount"`
-	Feeding []Feeding `json:"feeding"`
-	Deaths  []Death   `json:"deaths"`
 	Start   time.Time `json:"start"`
 	Finish  null.Time `json:"finish"`
+	Feeding []Feeding `json:"feeding"`
+	Deaths  []Death   `json:"deaths"`
+	CutOff  CutOff    `json:"cutoff"`
 	Created time.Time `json:"created"`
 	Updated null.Time `json:"updated"`
 }

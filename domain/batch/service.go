@@ -2,7 +2,9 @@ package batch
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/guregu/null"
 	"github.com/livestockz/api/domain/feed"
 	uuid "github.com/satori/go.uuid"
 )
@@ -248,6 +250,13 @@ func (svc *BatchService) StoreGrowthFeeding(feeding *Feeding) (*Feeding, error) 
 
 //growth cut off
 func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
+	//validate cutoff existed
+	if cutoffs, error := svc.BatchRepository.ResolveGrowthSummaryByBatchCycleID(cutoff.BatchCycleID); error != nil {
+		return nil, error
+	} else if cutoffs != nil {
+		return nil, fmt.Errorf("You cannot cutoff this cycle, cutoff existed.")
+	}
+
 	//get batch cycle and feeding data
 	if batchCycle, error := svc.BatchRepository.ResolveGrowthBatchCycleByID(cutoff.BatchID, cutoff.BatchCycleID); error != nil {
 		return nil, error
@@ -269,17 +278,19 @@ func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
 		cutoff.SR = (cutoff.Amount / batchCycle.Amount) * 100
 
 		//update cycle finish date on batch cycle then insert growth summary
-		cutoff.ID = uuid.Must(uuid.NewV4())
-		//batchCycle.Finish = cutoff.SummaryDate
-		if _, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle); err != nil {
+		batchCycle.Finish = null.TimeFrom(cutoff.SummaryDate)
+		_, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle)
+		if err != nil {
 			return nil, error
 		}
 
-		/*if result, err := svc.BatchRepository.InsertGrowthFeeding(feeding); err != nil {
-			return nil, err
+		cutoff.ID = uuid.Must(uuid.NewV4())
+		log.Print("cutoff:", cutoff, "\n")
+		summary, err := svc.BatchRepository.InsertGrowthSummary(cutoff)
+		if err != nil {
+			return nil, error
 		} else {
-			return result, nil
-		}*/
-		return nil, nil
+			return summary, nil
+		}
 	}
 }

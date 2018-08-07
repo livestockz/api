@@ -448,11 +448,12 @@ func (h *BatchHandler) StoreGrowthCutOff(c *gin.Context) {
 		utils.Error(c, fmt.Errorf("Invalid cycle id."))
 	} else if cutoff.Weight == 0 || cutoff.Amount == 0 {
 		utils.Error(c, fmt.Errorf("Incomplete data."))
-	} else if cutoff, err := h.BatchService.StoreGrowthCutOff(cutoff); err != nil {
+	} else if result, err := h.BatchService.StoreGrowthCutOff(&cutoff); err != nil {
 		utils.Error(c, err)
 	} else {
-		utils.Ok(c, nil)
+		utils.Ok(c, &result)
 	}
+	return
 }
 
 //feedtype
