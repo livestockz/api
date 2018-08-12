@@ -30,6 +30,7 @@ type Repository interface {
 	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
 	InsertGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCycle, error)
 	UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) (*BatchCycle, error)
+	UpdateGrowthBatchCycleByIDViaTx(tx *sql.Tx, batchCycle *BatchCycle) (*BatchCycle, error)
 	//batch cycle death
 	ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID) (*[]Death, error)
 	ResolveGrowthDeathByID(deathId uuid.UUID) (*Death, error)
@@ -39,9 +40,11 @@ type Repository interface {
 	ResolveGrowthFeedingByID(feedingId uuid.UUID) (*Feeding, error)
 	InsertGrowthFeeding(feeding *Feeding) (*Feeding, error)
 	//batch cycle summary
+	UpdateGrowthBatchCycleAndInsertGrowthSummaryViaTx(batchCycle *BatchCycle, cutoff *CutOff) (*CutOff, error)
 	ResolveGrowthSummaryByBatchCycleID(cycleId uuid.UUID) (*CutOff, error)
 	ResolveGrowthSummaryByID(summaryId uuid.UUID) (*CutOff, error)
 	InsertGrowthSummary(cutoff *CutOff) (*CutOff, error)
+	InsertGrowthSummaryViaTx(tx *sql.Tx, cutoff *CutOff) (*CutOff, error)
 }
 
 const (
@@ -559,7 +562,7 @@ func (repo *BatchRepository) ResolveGrowthBatchCyclePage(batchId uuid.UUID, page
 		cutoff, err := repo.ResolveGrowthSummaryByBatchCycleID(batchCycle.ID)
 		if err != nil {
 			return nil, page, limit, 0, err
-		} else {
+		} else if cutoff != nil {
 			batchCycle.CutOff = *cutoff
 			batchCycle.CutOff.BatchID = batchCycle.BatchID
 		}
@@ -635,7 +638,7 @@ func (repo *BatchRepository) ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycl
 		cutoff, err := repo.ResolveGrowthSummaryByBatchCycleID(batchCycles[0].ID)
 		if err != nil {
 			return nil, err
-		} else {
+		} else if cutoff != nil {
 			batchCycles[0].CutOff = *cutoff
 			batchCycles[0].CutOff.BatchID = batchCycles[0].BatchID
 		}
@@ -666,6 +669,29 @@ func (repo *BatchRepository) InsertGrowthBatchCycle(batchCycle *BatchCycle) (*Ba
 			//find inserted data from database based on generated id
 			res, err := repo.ResolveGrowthBatchCycleByID(batchCycle.BatchID, batchCycle.ID)
 			return res, err
+		}
+	}
+}
+
+func (repo *BatchRepository) UpdateGrowthBatchCycleByIDViaTx(tx *sql.Tx, batchCycle *BatchCycle) (*BatchCycle, error) {
+	updater := dbmapper.Prepare(updateGrowthBatchCycle).With(
+		dbmapper.Param("batch", batchCycle.Batch.ID),
+		dbmapper.Param("pool", batchCycle.Pool.ID),
+		dbmapper.Param("start", batchCycle.Start),
+		dbmapper.Param("finish", batchCycle.Finish),
+		dbmapper.Param("weight", batchCycle.Weight),
+		dbmapper.Param("amount", batchCycle.Amount),
+		dbmapper.Param("id", batchCycle.ID),
+	)
+	//validate query
+	if err := updater.Error(); err != nil {
+		return nil, err
+	} else {
+		//update to database
+		if _, err := tx.Exec(updater.SQL(), updater.Params()...); err != nil {
+			return nil, err
+		} else {
+			return batchCycle, nil
 		}
 	}
 }
@@ -884,6 +910,26 @@ func feedingsMapper(rows *[]Feeding) dbmapper.RowMapper {
 }
 
 //growth summary
+func (repo *BatchRepository) UpdateGrowthBatchCycleAndInsertGrowthSummaryViaTx(batchCycle *BatchCycle, cutoff *CutOff) (*CutOff, error) {
+	if tx, err := repo.DB.Begin(); err != nil {
+		return nil, err
+	} else if _, err := repo.UpdateGrowthBatchCycleByIDViaTx(tx, batchCycle); err != nil {
+		tx.Rollback()
+		return nil, err
+	} else if _, err := repo.InsertGrowthSummaryViaTx(tx, cutoff); err != nil {
+		tx.Rollback()
+		return nil, err
+	} else if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return nil, err
+	} else if result, err := repo.ResolveGrowthSummaryByID(cutoff.ID); err != nil {
+		return nil, err
+	} else {
+		result.BatchID = batchCycle.BatchID
+		return result, nil
+	}
+}
+
 func (repo *BatchRepository) ResolveGrowthSummaryByBatchCycleID(cycleId uuid.UUID) (*CutOff, error) {
 	query := dbmapper.Prepare(selectGrowthSummary + " WHERE growth_batch_cycle_id = :cycleId").With(
 		dbmapper.Param("cycleId", cycleId),
@@ -896,6 +942,8 @@ func (repo *BatchRepository) ResolveGrowthSummaryByBatchCycleID(cycleId uuid.UUI
 
 	if err != nil {
 		return nil, err
+	} else if len(cutoffs) < 1 {
+		return nil, nil
 	} else {
 		return &cutoffs[0], nil
 	}
@@ -942,6 +990,28 @@ func (repo *BatchRepository) InsertGrowthSummary(cutoff *CutOff) (*CutOff, error
 	} else {
 		result.BatchID = cutoff.BatchID
 		return result, nil
+	}
+}
+
+func (repo *BatchRepository) InsertGrowthSummaryViaTx(tx *sql.Tx, cutoff *CutOff) (*CutOff, error) {
+	//prepare query and params
+	insert := dbmapper.Prepare(insertGrowthSummary).With(
+		dbmapper.Param("id", cutoff.ID),
+		dbmapper.Param("cycleId", cutoff.BatchCycleID),
+		dbmapper.Param("summary_date", cutoff.SummaryDate),
+		dbmapper.Param("weight", cutoff.Weight),
+		dbmapper.Param("amount", cutoff.Amount),
+		dbmapper.Param("adg", cutoff.ADG),
+		dbmapper.Param("fcr", cutoff.FCR),
+		dbmapper.Param("sr", cutoff.SR),
+	)
+	//validate query
+	if err := insert.Error(); err != nil {
+		return nil, err
+	} else if _, err := tx.Exec(insert.SQL(), insert.Params()...); err != nil {
+		return nil, err
+	} else {
+		return cutoff, nil
 	}
 }
 

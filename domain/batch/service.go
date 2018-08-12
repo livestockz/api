@@ -2,7 +2,6 @@ package batch
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/guregu/null"
 	"github.com/livestockz/api/domain/feed"
@@ -279,18 +278,28 @@ func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
 
 		//update cycle finish date on batch cycle then insert growth summary
 		batchCycle.Finish = null.TimeFrom(cutoff.SummaryDate)
-		_, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle)
-		if err != nil {
-			return nil, error
-		}
-
 		cutoff.ID = uuid.Must(uuid.NewV4())
-		log.Print("cutoff:", cutoff, "\n")
-		summary, err := svc.BatchRepository.InsertGrowthSummary(cutoff)
+		/*
+			_, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle)
+			if err != nil {
+				return nil, error
+			}
+
+			cutoff.ID = uuid.Must(uuid.NewV4())
+			log.Print("cutoff:", cutoff, "\n")
+			summary, err := svc.BatchRepository.InsertGrowthSummary(cutoff)
+			if err != nil {
+				return nil, error
+			} else {
+				return summary, nil
+			}
+		*/
+		summary, err := svc.BatchRepository.UpdateGrowthBatchCycleAndInsertGrowthSummaryViaTx(batchCycle, cutoff)
 		if err != nil {
 			return nil, error
 		} else {
 			return summary, nil
 		}
+
 	}
 }
