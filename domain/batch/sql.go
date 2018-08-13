@@ -30,7 +30,7 @@ type Repository interface {
 	ResolveGrowthBatchCycleByID(batchId uuid.UUID, cycleId uuid.UUID) (*BatchCycle, error)
 	InsertGrowthBatchCycle(batchCycle *BatchCycle) (*BatchCycle, error)
 	UpdateGrowthBatchCycleByID(batchCycle *BatchCycle) (*BatchCycle, error)
-	UpdateGrowthBatchCycleByIDViaTx(tx *sql.Tx, batchCycle *BatchCycle) (*BatchCycle, error)
+	UpdateGrowthBatchCycleByIDTransaction(tx *sql.Tx, batchCycle *BatchCycle) (*BatchCycle, error)
 	//batch cycle death
 	ResolveGrowthDeathByBatchCycleID(cycleId uuid.UUID) (*[]Death, error)
 	ResolveGrowthDeathByID(deathId uuid.UUID) (*Death, error)
@@ -40,11 +40,11 @@ type Repository interface {
 	ResolveGrowthFeedingByID(feedingId uuid.UUID) (*Feeding, error)
 	InsertGrowthFeeding(feeding *Feeding) (*Feeding, error)
 	//batch cycle summary
-	UpdateGrowthBatchCycleAndInsertGrowthSummaryViaTx(batchCycle *BatchCycle, cutoff *CutOff) (*CutOff, error)
+	UpdateGrowthBatchCycleAndInsertGrowthSummaryTransaction(batchCycle *BatchCycle, cutoff *CutOff) (*CutOff, error)
 	ResolveGrowthSummaryByBatchCycleID(cycleId uuid.UUID) (*CutOff, error)
 	ResolveGrowthSummaryByID(summaryId uuid.UUID) (*CutOff, error)
 	InsertGrowthSummary(cutoff *CutOff) (*CutOff, error)
-	InsertGrowthSummaryViaTx(tx *sql.Tx, cutoff *CutOff) (*CutOff, error)
+	InsertGrowthSummaryTransaction(tx *sql.Tx, cutoff *CutOff) (*CutOff, error)
 }
 
 const (
@@ -673,7 +673,7 @@ func (repo *BatchRepository) InsertGrowthBatchCycle(batchCycle *BatchCycle) (*Ba
 	}
 }
 
-func (repo *BatchRepository) UpdateGrowthBatchCycleByIDViaTx(tx *sql.Tx, batchCycle *BatchCycle) (*BatchCycle, error) {
+func (repo *BatchRepository) UpdateGrowthBatchCycleByIDTransaction(tx *sql.Tx, batchCycle *BatchCycle) (*BatchCycle, error) {
 	updater := dbmapper.Prepare(updateGrowthBatchCycle).With(
 		dbmapper.Param("batch", batchCycle.Batch.ID),
 		dbmapper.Param("pool", batchCycle.Pool.ID),
@@ -910,13 +910,13 @@ func feedingsMapper(rows *[]Feeding) dbmapper.RowMapper {
 }
 
 //growth summary
-func (repo *BatchRepository) UpdateGrowthBatchCycleAndInsertGrowthSummaryViaTx(batchCycle *BatchCycle, cutoff *CutOff) (*CutOff, error) {
+func (repo *BatchRepository) UpdateGrowthBatchCycleAndInsertGrowthSummaryTransaction(batchCycle *BatchCycle, cutoff *CutOff) (*CutOff, error) {
 	if tx, err := repo.DB.Begin(); err != nil {
 		return nil, err
-	} else if _, err := repo.UpdateGrowthBatchCycleByIDViaTx(tx, batchCycle); err != nil {
+	} else if _, err := repo.UpdateGrowthBatchCycleByIDTransaction(tx, batchCycle); err != nil {
 		tx.Rollback()
 		return nil, err
-	} else if _, err := repo.InsertGrowthSummaryViaTx(tx, cutoff); err != nil {
+	} else if _, err := repo.InsertGrowthSummaryTransaction(tx, cutoff); err != nil {
 		tx.Rollback()
 		return nil, err
 	} else if err := tx.Commit(); err != nil {
@@ -993,7 +993,7 @@ func (repo *BatchRepository) InsertGrowthSummary(cutoff *CutOff) (*CutOff, error
 	}
 }
 
-func (repo *BatchRepository) InsertGrowthSummaryViaTx(tx *sql.Tx, cutoff *CutOff) (*CutOff, error) {
+func (repo *BatchRepository) InsertGrowthSummaryTransaction(tx *sql.Tx, cutoff *CutOff) (*CutOff, error) {
 	//prepare query and params
 	insert := dbmapper.Prepare(insertGrowthSummary).With(
 		dbmapper.Param("id", cutoff.ID),

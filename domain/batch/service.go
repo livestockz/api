@@ -294,7 +294,7 @@ func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
 				return summary, nil
 			}
 		*/
-		summary, err := svc.BatchRepository.UpdateGrowthBatchCycleAndInsertGrowthSummaryViaTx(batchCycle, cutoff)
+		summary, err := svc.BatchRepository.UpdateGrowthBatchCycleAndInsertGrowthSummaryTransaction(batchCycle, cutoff)
 		if err != nil {
 			return nil, error
 		} else {
