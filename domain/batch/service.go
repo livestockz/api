@@ -3,6 +3,7 @@ package batch
 import (
 	"fmt"
 
+	"github.com/guregu/null"
 	"github.com/livestockz/api/domain/feed"
 	uuid "github.com/satori/go.uuid"
 )
@@ -28,6 +29,8 @@ type Service interface {
 	StoreGrowthDeath(*Death) (*Death, error)
 	//death
 	StoreGrowthFeeding(*Feeding) (*Feeding, error)
+	//cut off
+	StoreGrowthCutOff(*CutOff) (*CutOff, error)
 }
 
 type BatchService struct {
@@ -241,5 +244,62 @@ func (svc *BatchService) StoreGrowthFeeding(feeding *Feeding) (*Feeding, error) 
 	} else {
 		result.FeedType = *feedtype
 		return result, nil
+	}
+}
+
+//growth cut off
+func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
+	//validate cutoff existed
+	if cutoffs, error := svc.BatchRepository.ResolveGrowthSummaryByBatchCycleID(cutoff.BatchCycleID); error != nil {
+		return nil, error
+	} else if cutoffs != nil {
+		return nil, fmt.Errorf("You cannot cutoff this cycle, cutoff existed.")
+	}
+
+	//get batch cycle and feeding data
+	if batchCycle, error := svc.BatchRepository.ResolveGrowthBatchCycleByID(cutoff.BatchID, cutoff.BatchCycleID); error != nil {
+		return nil, error
+	} else if feedings, err := svc.BatchRepository.ResolveGrowthFeedingByBatchCycleID(cutoff.BatchCycleID); err != nil {
+		return nil, error
+	} else {
+		//calculate ADG
+		days := cutoff.SummaryDate.Sub(batchCycle.Start).Hours() / 24
+		cutoff.ADG = (cutoff.Weight - batchCycle.Weight) / days
+
+		//calculate FCR
+		var total float64
+		for _, feeding := range *feedings {
+			total = total + feeding.Qty
+		}
+		cutoff.FCR = total / (cutoff.Weight - batchCycle.Weight)
+
+		//calculate SR
+		cutoff.SR = (cutoff.Amount / batchCycle.Amount) * 100
+
+		//update cycle finish date on batch cycle then insert growth summary
+		batchCycle.Finish = null.TimeFrom(cutoff.SummaryDate)
+		cutoff.ID = uuid.Must(uuid.NewV4())
+		/*
+			_, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle)
+			if err != nil {
+				return nil, error
+			}
+
+			cutoff.ID = uuid.Must(uuid.NewV4())
+			log.Print("cutoff:", cutoff, "\n")
+			summary, err := svc.BatchRepository.InsertGrowthSummary(cutoff)
+			if err != nil {
+				return nil, error
+			} else {
+				return summary, nil
+			}
+		*/
+		summary, err := svc.BatchRepository.UpdateGrowthBatchCycleAndInsertGrowthSummaryTransaction(batchCycle, cutoff)
+		if err != nil {
+			return nil, error
+		} else {
+			return summary, nil
+		}
+
 	}
 }

@@ -434,6 +434,28 @@ func (h *BatchHandler) StoreGrowthFeeding(c *gin.Context) {
 	return
 }
 
+//growth batch cycle cut off
+func (h *BatchHandler) StoreGrowthCutOff(c *gin.Context) {
+	var bid = c.Params.ByName("batchId")
+	var cid = c.Params.ByName("cycleId")
+
+	var cutoff batch.CutOff
+	c.BindJSON(&cutoff)
+
+	if bid == "" {
+		utils.Error(c, fmt.Errorf("Invalid batch id."))
+	} else if cid == "" {
+		utils.Error(c, fmt.Errorf("Invalid cycle id."))
+	} else if cutoff.Weight == 0 || cutoff.Amount == 0 {
+		utils.Error(c, fmt.Errorf("Incomplete data."))
+	} else if result, err := h.BatchService.StoreGrowthCutOff(&cutoff); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Ok(c, &result)
+	}
+	return
+}
+
 //feedtype
 func (h *FeedHandler) ResolveFeedTypePage(c *gin.Context) {
 	//capture something like this: http://localhost:9090/feed/feed-type?page=1&limit=10
