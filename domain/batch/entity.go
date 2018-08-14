@@ -86,3 +86,24 @@ type CutOff struct {
 	SR           float64   `json:"sr"`
 	Created      time.Time `json:"created"`
 }
+
+type Sales struct {
+	ID        uuid.UUID     `json:"id"`
+	SalesDate time.Time     `json:"sales_date"`
+	Qty       float64       `json:"qty"`
+	Created   time.Time     `json:"created"`
+	Updated   null.Time     `json:"updated"`
+	Reference string        `json:"reference"`
+	Detail    []SalesDetail `json:"detail"`
+}
+
+type SalesDetail struct {
+	ID           uuid.UUID `json:"id"`
+	SalesID      uuid.UUID `json:"sales_id"`
+	BatchID      uuid.UUID `json:"batch_id"`
+	BatchCycleID uuid.UUID `json:"batch_cycle_id"`
+	Amount       float64   `json:"amount"`
+	Weight       float64   `json:"weight"`
+	Created      time.Time `json:"created"`
+	Updated      null.Time `json:"updated"`
+}

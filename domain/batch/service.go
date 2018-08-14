@@ -31,6 +31,8 @@ type Service interface {
 	StoreGrowthFeeding(*Feeding) (*Feeding, error)
 	//cut off
 	StoreGrowthCutOff(*CutOff) (*CutOff, error)
+	//sales
+	StoreGrowthSales(sales *Sales) (*Sales, error)
 }
 
 type BatchService struct {
@@ -279,21 +281,6 @@ func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
 		//update cycle finish date on batch cycle then insert growth summary
 		batchCycle.Finish = null.TimeFrom(cutoff.SummaryDate)
 		cutoff.ID = uuid.Must(uuid.NewV4())
-		/*
-			_, err := svc.BatchRepository.UpdateGrowthBatchCycleByID(batchCycle)
-			if err != nil {
-				return nil, error
-			}
-
-			cutoff.ID = uuid.Must(uuid.NewV4())
-			log.Print("cutoff:", cutoff, "\n")
-			summary, err := svc.BatchRepository.InsertGrowthSummary(cutoff)
-			if err != nil {
-				return nil, error
-			} else {
-				return summary, nil
-			}
-		*/
 		summary, err := svc.BatchRepository.UpdateGrowthBatchCycleAndInsertGrowthSummaryTransaction(batchCycle, cutoff)
 		if err != nil {
 			return nil, error
@@ -301,5 +288,21 @@ func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
 			return summary, nil
 		}
 
+	}
+}
+
+//growth sales
+func (svc *BatchService) StoreGrowthSales(sales *Sales) (*Sales, error) {
+	if sales.ID == uuid.Nil {
+		sales.ID = uuid.Must(uuid.NewV4())
+		if sales, err := svc.BatchRepository.InsertGrowthSales(sales); err != nil {
+			return nil, err
+		} else {
+			return sales, nil
+		}
+	} else if sales, err := svc.BatchRepository.UpdateGrowthSales(sales); err != nil {
+		return nil, err
+	} else {
+		return sales, nil
 	}
 }
