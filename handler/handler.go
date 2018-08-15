@@ -467,6 +467,12 @@ func (h *BatchHandler) StoreGrowthSales(c *gin.Context) {
 		utils.Error(c, fmt.Errorf("Invalid sales id."))
 	} else if sales.Qty == 0 {
 		utils.Error(c, fmt.Errorf("Incomplete data."))
+	} else if sid == "" && sales.ID == uuid.Nil {
+		if result, err := h.BatchService.StoreGrowthSales(&sales); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Ok(c, &result)
+		}
 	} else {
 		if salesId, err := uuid.FromString(sid); err != nil {
 			utils.Error(c, err)

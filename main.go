@@ -43,6 +43,7 @@ func main() {
 	sc.RegisterService("feedRepository", new(feed.FeedRepository))
 	sc.HandleGracefulShutdown(3 * time.Second)
 	if err := sc.Ready(); err != nil {
+		//log.Print(err)
 		panic("Failed to start service container")
 	}
 
@@ -76,6 +77,7 @@ func main() {
 		//batch cycle sales
 		growth.POST("/sales", batchHandler.StoreGrowthSales)
 		growth.PUT("/sales/:salesId", batchHandler.StoreGrowthSales)
+
 	}
 	feed := r.Group("/feed")
 	{

@@ -300,9 +300,11 @@ func (svc *BatchService) StoreGrowthSales(sales *Sales) (*Sales, error) {
 		} else {
 			return sales, nil
 		}
-	} else if sales, err := svc.BatchRepository.UpdateGrowthSales(sales); err != nil {
-		return nil, err
 	} else {
-		return sales, nil
+		if sales, err := svc.BatchRepository.UpdateGrowthSalesByID(sales); err != nil {
+			return nil, err
+		} else {
+			return sales, nil
+		}
 	}
 }

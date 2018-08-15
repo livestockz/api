@@ -49,9 +49,9 @@ type Repository interface {
 	//ResolveGrowthSalesByBatchCycleID(cycleId uuid.UUID) (*[]Sales, error)
 	ResolveGrowthSalesByID(salesId uuid.UUID) (*Sales, error)
 	InsertGrowthSales(sales *Sales) (*Sales, error)
-	UpdateGrowthSales(sales *Sales) (*Sales, error)
+	UpdateGrowthSalesByID(sales *Sales) (*Sales, error)
 	//batch cycle sales detail
-	ResolveGrowthSalesDetailBySalesID(salesId uuid.UUID) (*[]SalesDetail, error)
+	//ResolveGrowthSalesDetailBySalesID(salesId uuid.UUID) (*[]SalesDetail, error)
 }
 
 const (
@@ -83,7 +83,7 @@ const (
 	insertGrowthSales = `INSERT INTO growth_sales(id, sales_date, qty, reference, created) VALUES (:id ,:sales_date, :qty, :reference, NOW())`
 	updateGrowthSales = `UPDATE growth_sales SET sales_date = :sales_date, qty = :qty, reference = :reference, updated = NOW() WHERE id = :id`
 	//sales detail
-	selectGrowthSalesDetail = `SELECT id, sales_id, batch_cycle_id, amount, weight, created, updated FROM growth_sales_detail`
+	selectGrowthSalesDetail = `SELECT id, sales_id, growth_batch_cycle_id, amount, weight, created, updated FROM growth_sales_detail`
 )
 
 type BatchRepository struct {
@@ -1086,16 +1086,16 @@ func (repo *BatchRepository) InsertGrowthSales(sales *Sales) (*Sales, error) {
 		return nil, err
 	} else if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
 		return nil, err
+	} else if result, err := repo.ResolveGrowthSalesByID(sales.ID); err != nil {
+		return nil, err
 	} else {
-		return sales, nil
+		return result, nil
 	}
 }
 
 func (repo *BatchRepository) UpdateGrowthSalesByID(sales *Sales) (*Sales, error) {
 	//find whether if data exist
-	_, err := repo.ResolveGrowthSalesByID(sales.ID)
-
-	if err != nil {
+	if _, err := repo.ResolveGrowthSalesByID(sales.ID); err != nil {
 		return nil, err
 	} else {
 		//update
