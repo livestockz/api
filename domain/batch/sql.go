@@ -1191,32 +1191,27 @@ func (repo *BatchRepository) UpdateGrowthBatchCycleInsertGrowthSummaryAndInsertS
 	} else {
 		for _, detail := range sales.Detail {
 			if _, err := repo.InsertGrowthSalesDetailTransaction(tx, &detail); err != nil {
-				log.Print("error:", err, "\n")
 				tx.Rollback()
 				return nil, err
 			}
 		}
 		for _, bc := range *batchCycle {
 			if _, err := repo.UpdateGrowthBatchCycleByIDTransaction(tx, &bc); err != nil {
-				log.Print("error:", err, "\n")
 				tx.Rollback()
 				return nil, err
 			}
 		}
 		for _, c := range *cutoff {
 			if _, err := repo.InsertGrowthSummaryTransaction(tx, &c); err != nil {
-				log.Print("error:", err, "\n")
 				tx.Rollback()
 				return nil, err
 			}
 		}
 
 		if err := tx.Commit(); err != nil {
-			log.Print("error:", err, "\n")
 			tx.Rollback()
 			return nil, err
 		} else if result, err := repo.ResolveGrowthSalesByID(sales.ID); err != nil {
-			log.Print("error:", err, "\n")
 			return nil, err
 		} else {
 			return result, nil
