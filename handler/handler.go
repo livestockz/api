@@ -457,6 +457,21 @@ func (h *BatchHandler) StoreGrowthCutOff(c *gin.Context) {
 }
 
 //growth sales
+func (h *BatchHandler) ResolveGrowthSalesByID(c *gin.Context) {
+	var sid = c.Params.ByName("salesId")
+	if sid == "" {
+		utils.Error(c, fmt.Errorf("Invalid Sales ID"))
+	} else if salesId, err := uuid.FromString(sid); err != nil {
+		utils.Error(c, err)
+	} else if salesId == uuid.Nil {
+		utils.Error(c, fmt.Errorf("Sales Id cannot be null"))
+	} else if result, err := h.BatchService.ResolveGrowthSalesByID(salesId); err != nil {
+		utils.Error(c, err)
+	} else {
+		utils.Ok(c, result)
+	}
+	return
+}
 func (h *BatchHandler) StoreGrowthSales(c *gin.Context) {
 	var sid = c.Params.ByName("salesId")
 
@@ -482,6 +497,39 @@ func (h *BatchHandler) StoreGrowthSales(c *gin.Context) {
 			utils.Error(c, err)
 		} else {
 			utils.Ok(c, &result)
+		}
+	}
+	return
+}
+
+//growth sales detail
+func (h *BatchHandler) StoreGrowthSalesDetail(c *gin.Context) {
+	var sid = c.Params.ByName("salesId")
+
+	var sales batch.Sales
+	c.BindJSON(&sales)
+
+	if salesId, err := uuid.FromString(sid); err != nil {
+		utils.Error(c, err)
+	} else if salesId != sales.ID {
+		utils.Error(c, fmt.Errorf("Mismatch given sales Id."))
+	} else if sales.Qty == 0 {
+		utils.Error(c, fmt.Errorf("Qty cannot be empty."))
+	} else {
+		for _, detail := range sales.Detail {
+			if detail.BatchCycleID == uuid.Nil {
+				utils.Error(c, fmt.Errorf("Invalid batch cycle id."))
+				return
+			} else if detail.Amount == 0 || detail.Weight == 0 {
+				utils.Error(c, fmt.Errorf("Weight and Amount cannot be empty"))
+				return
+			}
+		}
+
+		if result, err := h.BatchService.StoreGrowthSalesDetail(&sales); err != nil {
+			utils.Error(c, err)
+		} else {
+			utils.Ok(c, result)
 		}
 	}
 	return

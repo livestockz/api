@@ -52,6 +52,7 @@ type Repository interface {
 	UpdateGrowthSalesByID(sales *Sales) (*Sales, error)
 	//batch cycle sales detail
 	//ResolveGrowthSalesDetailBySalesID(salesId uuid.UUID) (*[]SalesDetail, error)
+	UpdateGrowthBatchCycleInsertGrowthSummaryAndInsertSalesDetail(batchCycle *[]BatchCycle, cutoff *[]CutOff, sales *Sales) (*Sales, error)
 }
 
 const (
@@ -84,6 +85,7 @@ const (
 	updateGrowthSales = `UPDATE growth_sales SET sales_date = :sales_date, qty = :qty, reference = :reference, updated = NOW() WHERE id = :id`
 	//sales detail
 	selectGrowthSalesDetail = `SELECT id, sales_id, growth_batch_cycle_id, amount, weight, created, updated FROM growth_sales_detail`
+	insertGrowthSalesDetail = `INSERT INTO growth_sales_detail(id, sales_id, growth_batch_cycle_id, amount, weight, created) VALUES (:id ,:sales_id, :batch_cycle_id, :amount, :weight, NOW())`
 )
 
 type BatchRepository struct {
@@ -1145,7 +1147,7 @@ func salesMapper(rows *[]Sales) dbmapper.RowMapper {
 
 //growth sales detail
 func (repo *BatchRepository) ResolveGrowthSalesDetailBySalesID(salesId uuid.UUID) (*[]SalesDetail, error) {
-	query := dbmapper.Prepare(selectGrowthSalesDetail + " WHERE id = :salesId").With(
+	query := dbmapper.Prepare(selectGrowthSalesDetail + " WHERE sales_id = :salesId").With(
 		dbmapper.Param("salesId", salesId),
 	)
 	if err := query.Error(); err != nil {
@@ -1180,5 +1182,63 @@ func salesDetailsMapper(rows *[]SalesDetail) dbmapper.RowMapper {
 			*rows = append(*rows, row)
 			return nil
 		})
+	}
+}
+
+func (repo *BatchRepository) UpdateGrowthBatchCycleInsertGrowthSummaryAndInsertSalesDetail(batchCycle *[]BatchCycle, cutoff *[]CutOff, sales *Sales) (*Sales, error) {
+	if tx, err := repo.DB.Begin(); err != nil {
+		return nil, err
+	} else {
+		for _, detail := range sales.Detail {
+			if _, err := repo.InsertGrowthSalesDetailTransaction(tx, &detail); err != nil {
+				log.Print("error:", err, "\n")
+				tx.Rollback()
+				return nil, err
+			}
+		}
+		for _, bc := range *batchCycle {
+			if _, err := repo.UpdateGrowthBatchCycleByIDTransaction(tx, &bc); err != nil {
+				log.Print("error:", err, "\n")
+				tx.Rollback()
+				return nil, err
+			}
+		}
+		for _, c := range *cutoff {
+			if _, err := repo.InsertGrowthSummaryTransaction(tx, &c); err != nil {
+				log.Print("error:", err, "\n")
+				tx.Rollback()
+				return nil, err
+			}
+		}
+
+		if err := tx.Commit(); err != nil {
+			log.Print("error:", err, "\n")
+			tx.Rollback()
+			return nil, err
+		} else if result, err := repo.ResolveGrowthSalesByID(sales.ID); err != nil {
+			log.Print("error:", err, "\n")
+			return nil, err
+		} else {
+			return result, nil
+		}
+	}
+}
+
+func (repo *BatchRepository) InsertGrowthSalesDetailTransaction(tx *sql.Tx, detail *SalesDetail) (*SalesDetail, error) {
+	//prepare query and params
+	insert := dbmapper.Prepare(insertGrowthSalesDetail).With(
+		dbmapper.Param("id", detail.ID),
+		dbmapper.Param("sales_id", detail.SalesID),
+		dbmapper.Param("batch_cycle_id", detail.BatchCycleID),
+		dbmapper.Param("weight", detail.Weight),
+		dbmapper.Param("amount", detail.Amount),
+	)
+	//validate query
+	if err := insert.Error(); err != nil {
+		return nil, err
+	} else if _, err := repo.DB.Exec(insert.SQL(), insert.Params()...); err != nil {
+		return nil, err
+	} else {
+		return detail, nil
 	}
 }

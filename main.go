@@ -75,9 +75,11 @@ func main() {
 		//batch cycle cut off
 		growth.POST("/batch/:batchId/cycle/:cycleId/cutoff", batchHandler.StoreGrowthCutOff)
 		//batch cycle sales
+		growth.GET("/sales/:salesId", batchHandler.ResolveGrowthSalesByID)
 		growth.POST("/sales", batchHandler.StoreGrowthSales)
 		growth.PUT("/sales/:salesId", batchHandler.StoreGrowthSales)
-
+		//batch cycle sales detail
+		growth.POST("/sales/:salesId/detail", batchHandler.StoreGrowthSalesDetail)
 	}
 	feed := r.Group("/feed")
 	{

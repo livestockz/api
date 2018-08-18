@@ -2,6 +2,7 @@ package batch
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/guregu/null"
 	"github.com/livestockz/api/domain/feed"
@@ -32,7 +33,9 @@ type Service interface {
 	//cut off
 	StoreGrowthCutOff(*CutOff) (*CutOff, error)
 	//sales
+	ResolveGrowthSalesByID(salesId uuid.UUID) (*Sales, error)
 	StoreGrowthSales(sales *Sales) (*Sales, error)
+	StoreGrowthSalesDetail(sales *Sales) (*Sales, error)
 }
 
 type BatchService struct {
@@ -292,6 +295,13 @@ func (svc *BatchService) StoreGrowthCutOff(cutoff *CutOff) (*CutOff, error) {
 }
 
 //growth sales
+func (svc *BatchService) ResolveGrowthSalesByID(salesId uuid.UUID) (*Sales, error) {
+	if result, err := svc.BatchRepository.ResolveGrowthSalesByID(salesId); err != nil {
+		return nil, err
+	} else {
+		return result, nil
+	}
+}
 func (svc *BatchService) StoreGrowthSales(sales *Sales) (*Sales, error) {
 	if sales.ID == uuid.Nil {
 		sales.ID = uuid.Must(uuid.NewV4())
@@ -306,5 +316,54 @@ func (svc *BatchService) StoreGrowthSales(sales *Sales) (*Sales, error) {
 		} else {
 			return sales, nil
 		}
+	}
+}
+
+func (svc *BatchService) StoreGrowthSalesDetail(sales *Sales) (*Sales, error) {
+	//set sales id and create cutoff
+	cutoffs := make([]CutOff, 0)
+	batchCycles := make([]BatchCycle, 0)
+	salesDetail := make([]SalesDetail, 0)
+	for _, detail := range sales.Detail {
+		detail.ID = uuid.Must(uuid.NewV4())
+		salesDetail = append(salesDetail, detail)
+		var cutoff CutOff
+		if batchCycle, error := svc.BatchRepository.ResolveGrowthBatchCycleByID(detail.BatchID, detail.BatchCycleID); error != nil {
+			return nil, error
+		} else if feedings, err := svc.BatchRepository.ResolveGrowthFeedingByBatchCycleID(detail.BatchCycleID); err != nil {
+			return nil, error
+		} else {
+			//calculate ADG
+			days := cutoff.SummaryDate.Sub(batchCycle.Start).Hours() / 24
+			cutoff.ADG = (cutoff.Weight - batchCycle.Weight) / days
+
+			//calculate FCR
+			var total float64
+			for _, feeding := range *feedings {
+				total = total + feeding.Qty
+			}
+			cutoff.FCR = total / (cutoff.Weight - batchCycle.Weight)
+
+			//calculate SR
+			cutoff.SR = (cutoff.Amount / batchCycle.Amount) * 100
+
+			//set cycle finish date on batch cycle then insert growth summary
+			batchCycle.Finish = null.TimeFrom(time.Now())
+			batchCycles = append(batchCycles, *batchCycle)
+			cutoff.ID = uuid.Must(uuid.NewV4())
+			cutoff.BatchCycleID = detail.BatchCycleID
+			cutoff.BatchID = detail.BatchID
+			cutoff.Weight = detail.Weight
+			cutoff.Amount = detail.Amount
+			cutoff.SummaryDate = time.Now()
+			cutoffs = append(cutoffs, cutoff)
+		}
+	}
+	sales.Detail = salesDetail
+
+	if result, err := svc.BatchRepository.UpdateGrowthBatchCycleInsertGrowthSummaryAndInsertSalesDetail(&batchCycles, &cutoffs, sales); err != nil {
+		return nil, err
+	} else {
+		return result, nil
 	}
 }
